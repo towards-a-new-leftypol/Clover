@@ -20,6 +20,7 @@ import java.text.ParsePosition;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import okhttp3.HttpUrl;
 
@@ -41,6 +42,7 @@ public class BunkerchanApi extends CommonSite.CommonApi {
             post.opId(op.id);
             queue.addForParse(post);
         }
+        queue.setOp(op);
     }
 
     @Override
@@ -132,6 +134,8 @@ public class BunkerchanApi extends CommonSite.CommonApi {
 
     // Sets a single property of the Post
     private boolean setPostProperty(SiteEndpoints endpoints, Post.Builder builder, String prop, JsonReader reader) throws Exception {
+        Pattern brokenLt = Pattern.compile("(&lt)(?:[^;])");
+
         switch (prop) {
             case "name":
                 builder.name(this.nextString(reader));
@@ -147,7 +151,10 @@ public class BunkerchanApi extends CommonSite.CommonApi {
                 ).getTime() / 1000); // Millis to secs
                 break;
             case "markdown":
-                builder.comment(this.nextString(reader));
+                builder.comment(
+                        this.nextString(reader)
+                        .replaceAll("(&lt)([^;])", "&lt;$2") // Fix broken entities
+                );
                 break;
             case "threadId":
                 int op = this.nextInt(reader);
@@ -189,7 +196,7 @@ public class BunkerchanApi extends CommonSite.CommonApi {
 
                         switch (imgProp) {
                             case "originalName":
-                                imgBuilder.originalName(this.nextString(reader));
+                                imgBuilder.filename(this.nextString(reader));
                                 break;
                             case "path":
                                 imgBuilder.imageUrl(endpoints.imageUrl(
