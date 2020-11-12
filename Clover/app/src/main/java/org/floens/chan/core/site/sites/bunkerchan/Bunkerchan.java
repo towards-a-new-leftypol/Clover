@@ -101,7 +101,6 @@ public class Bunkerchan extends CommonSite {
 
         setApi(new BunkerchanApi(this));
 
-        // TODO: Implement
-        setParser(new CommentParser());
+        setParser(new BunkerchanCommentParser());
     }
 }

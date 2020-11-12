@@ -142,7 +142,7 @@ public class CommentParser {
         }
     }
 
-    private CharSequence handleAnchor(Theme theme,
+    public CharSequence handleAnchor(Theme theme,
                                       PostParser.Callback callback,
                                       Post.Builder post,
                                       CharSequence text,
