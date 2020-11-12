@@ -19,7 +19,6 @@ import java.io.IOException;
 import java.text.ParsePosition;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 
 import okhttp3.HttpUrl;
@@ -34,145 +33,28 @@ public class BunkerchanApi extends CommonSite.CommonApi {
 
     @Override
     public void loadThread(JsonReader reader, ChanReaderProcessingQueue queue) throws Exception {
+        List<Post.Builder> posts = this.parsePosts(queue.getLoadable(), reader);
 
-        reader.beginObject();
+        Post.Builder op = posts.get(0);
 
-        // TODO: We will miss the OP this way
-        while (reader.hasNext()) {
-            String key = reader.nextName();
-            if (key.equals("posts")) {
-                reader.beginArray();
-                while (reader.hasNext()) {
-                    readPostObject(reader, queue);
-                }
-                reader.endArray();
-            } else {
-                reader.skipValue();
-            }
+        for (Post.Builder post : posts) {
+            post.opId(op.id);
+            queue.addForParse(post);
         }
-        reader.endObject();
     }
 
     @Override
     public void loadCatalog(JsonReader reader, ChanReaderProcessingQueue queue) throws Exception {
         reader.beginArray();
         while (reader.hasNext()) {
-            queue.addForParse(this.parsePost(queue.getLoadable(), reader));
+            queue.addForParse(this.parsePosts(queue.getLoadable(), reader).get(0));
         }
         reader.endArray();
     }
 
     @Override
     public void readPostObject(JsonReader reader, ChanReaderProcessingQueue queue) throws Exception {
-        Post.Builder builder = new Post.Builder();
-        builder.board(queue.getLoadable().board);
-
-        SiteEndpoints endpoints = queue.getLoadable().getSite().endpoints();
-
-        String flagName = null, flagPath = null;
-
-        // TODO: Unify this code with the catalog post parser
-        // TODO: Get this thread post parser working
-        reader.beginObject();
-        while (reader.hasNext()) {
-            String key = reader.nextName();
-
-            switch (key) {
-                case "name":
-                    builder.name(this.nextString(reader));
-                    break;
-                case "flag":
-                    flagPath = this.nextString(reader);
-                    break;
-                case "flagName":
-                    flagName = this.nextString(reader);
-                    break;
-                case "subject":
-                    builder.subject(this.nextString(reader));
-                    break;
-                case "markdown":
-                    builder.comment(this.nextString(reader));
-                    break;
-                case "postId":
-                case "threadId":
-                    builder.id(reader.nextInt());
-                    break;
-                case "creation":
-                case "lastBump":
-                    builder.lastModified(ISO8601Utils.parse(
-                            this.nextString(reader),
-                            new ParsePosition(0)
-                    ).getTime() / 1000); // Millis to secs
-                    break;
-                case "postCount":
-                    builder.replies(reader.nextInt());
-                    break;
-                case "fileCount":
-                    builder.images(reader.nextInt());
-                    break;
-                case "locked":
-                    builder.closed(reader.nextBoolean());
-                    break;
-                case "pinned":
-                    builder.sticky(reader.nextBoolean());
-                    break;
-                case "files":
-                    // TODO: This should be a separate function
-                    reader.beginArray();
-                    List<PostImage> files = new ArrayList<>();
-                    while (reader.hasNext()) {
-                        PostImage.Builder imgBuilder = new PostImage.Builder();
-                        reader.beginObject();
-                        while (reader.hasNext()) {
-                            String prop = reader.nextName();
-
-                            switch (prop) {
-                                case "originalName":
-                                    imgBuilder.originalName(this.nextString(reader));
-                                    break;
-                                case "path":
-                                    imgBuilder.imageUrl(endpoints.imageUrl(
-                                            builder,
-                                            makeArgument("path", this.nextString(reader))
-                                    ));
-                                    break;
-                                case "thumb":
-                                    imgBuilder.thumbnailUrl(endpoints.imageUrl(
-                                            builder,
-                                            makeArgument("path", this.nextString(reader))
-                                    ));
-                                    break;
-                                case "mime":
-                                    imgBuilder.extension(
-                                            MimeTypeMap.getSingleton().getExtensionFromMimeType(
-                                                    this.nextString(reader)
-                                            )
-                                    );
-                                    break;
-                                case "size":
-                                    imgBuilder.size(reader.nextLong());
-                                    break;
-                                case "width":
-                                    imgBuilder.imageWidth(reader.nextInt());
-                                    break;
-                                case "height":
-                                    imgBuilder.imageHeight(reader.nextInt());
-                                    break;
-                            }
-                        }
-                        files.add(imgBuilder.build());
-                        reader.endObject();
-                    }
-                    builder.images(files);
-                    reader.endArray();
-                    break;
-                default:
-                    // Logger.d("bunkerchan", "Unknown post json key: " + key);
-                    reader.skipValue();
-                    break;
-            }
-        }
-        reader.endObject();
+        Post.Builder builder = this.parsePosts(queue.getLoadable(), reader).get(0);
 
         // TODO: Read documentation on caching
         // Post cached = queue.getCachedPost(builder.id);
@@ -182,6 +64,44 @@ public class BunkerchanApi extends CommonSite.CommonApi {
         //     return;
         // }
 
+        queue.addForParse(builder);
+    }
+
+    private List<Post.Builder> parsePosts(Loadable loadable, JsonReader reader) throws Exception {
+        SiteEndpoints endpoints = loadable.getSite().endpoints();
+        ArrayList<Post.Builder> list = new ArrayList<>();
+        Post.Builder builder = new Post.Builder();
+
+        builder.board(loadable.board);
+        list.add(builder);
+
+        String flagName = null, flagPath = null;
+
+        reader.beginObject();
+        while (reader.hasNext()) {
+            String key = reader.nextName();
+
+            switch (key) {
+                case "flag":
+                    flagPath = this.nextString(reader);
+                    break;
+                case "flagName":
+                    flagName = this.nextString(reader);
+                    break;
+                case "posts":
+                    reader.beginArray();
+                    while (reader.hasNext()) {
+                        list.addAll(this.parsePosts(loadable, reader));
+                    }
+                    reader.endArray();
+                    break;
+                default:
+                    this.setPostProperty(endpoints, builder, key, reader);
+                    break;
+            }
+        }
+        reader.endObject();
+
         if (flagName != null && flagPath != null) {
             builder.addHttpIcon(new PostHttpIcon(
                     endpoints.icon(builder, flagName, makeArgument("path", flagPath)),
@@ -189,7 +109,7 @@ public class BunkerchanApi extends CommonSite.CommonApi {
             ));
         }
 
-        queue.addForParse(builder);
+        return list;
     }
 
     private String nextString(JsonReader reader) throws IOException {
@@ -201,63 +121,123 @@ public class BunkerchanApi extends CommonSite.CommonApi {
         }
     }
 
-    private Post.Builder parsePost(Loadable loadable, JsonReader reader) throws Exception {
-        Post.Builder builder = new Post.Builder();
-        SiteEndpoints endpoints = loadable.getSite().endpoints();
-
-        builder.board(loadable.board);
-
-        reader.beginObject();
-        while (reader.hasNext()) {
-            String key = reader.nextName();
-
-            switch (key) {
-                case "markdown":
-                    builder.comment(this.nextString(reader));
-                    break;
-                case "threadId":
-                    int op = reader.nextInt();
-                    builder.id(op);
-                    builder.opId(op);
-                    break;
-                case "postCount":
-                    builder.replies(reader.nextInt());
-                    break;
-                case "fileCount":
-                    builder.images(reader.nextInt());
-                    break;
-                case "subject":
-                    builder.subject(this.nextString(reader));
-                    break;
-                case "locked":
-                    builder.closed(reader.nextBoolean());
-                    break;
-                case "pinned":
-                    builder.sticky(reader.nextBoolean());
-                    break;
-                case "lastBump":
-                    Date date = ISO8601Utils.parse(this.nextString(reader), new ParsePosition(0));
-                    builder.setUnixTimestampSeconds(
-                            // Milli to secs
-                            date.getTime() / 1000
-                    );
-                    break;
-                case "thumb": // This is a thumb in the catalog
-                    builder.images(Arrays.asList(this.buildThumbnail(
-                            endpoints,
-                            builder,
-                            this.nextString(reader)
-                    ).build()));
-                    break;
-                default:
-                    // Logger.d("bunkerchan", "Unknown post json key: " + key);
-                    reader.skipValue();
-                    break;
-            }
+    private int nextInt(JsonReader reader) throws IOException {
+        if (reader.peek() == JsonToken.NULL) {
+            reader.skipValue();
+            return 0;
+        } else {
+            return reader.nextInt();
         }
-        reader.endObject();
+    }
 
-        return builder;
+    // Sets a single property of the Post
+    private boolean setPostProperty(SiteEndpoints endpoints, Post.Builder builder, String prop, JsonReader reader) throws Exception {
+        switch (prop) {
+            case "name":
+                builder.name(this.nextString(reader));
+                break;
+            case "postId":
+                builder.id(this.nextInt(reader));
+                break;
+            case "creation":
+            case "lastBump":
+                builder.setUnixTimestampSeconds(ISO8601Utils.parse(
+                        this.nextString(reader),
+                        new ParsePosition(0)
+                ).getTime() / 1000); // Millis to secs
+                break;
+            case "markdown":
+                builder.comment(this.nextString(reader));
+                break;
+            case "threadId":
+                int op = this.nextInt(reader);
+                builder.id(op);
+                builder.opId(op);
+                builder.op(true);
+                break;
+            case "postCount":
+                builder.replies(this.nextInt(reader));
+                break;
+            case "fileCount":
+                builder.images(this.nextInt(reader));
+                break;
+            case "subject":
+                builder.subject(this.nextString(reader));
+                break;
+            case "locked":
+                builder.closed(reader.nextBoolean());
+                break;
+            case "pinned":
+                builder.sticky(reader.nextBoolean());
+                break;
+            case "thumb": // This is a thumb in the catalog
+                builder.images(Arrays.asList(this.buildThumbnail(
+                        endpoints,
+                        builder,
+                        this.nextString(reader)
+                ).build()));
+                break;
+            case "files":
+                // TODO: This should be a separate function
+                reader.beginArray();
+                List<PostImage> files = new ArrayList<>();
+                while (reader.hasNext()) {
+                    PostImage.Builder imgBuilder = new PostImage.Builder();
+                    reader.beginObject();
+                    while (reader.hasNext()) {
+                        String imgProp = reader.nextName();
+
+                        switch (imgProp) {
+                            case "originalName":
+                                imgBuilder.originalName(this.nextString(reader));
+                                break;
+                            case "path":
+                                imgBuilder.imageUrl(endpoints.imageUrl(
+                                        builder,
+                                        makeArgument("path", this.nextString(reader))
+                                ));
+                                break;
+                            case "thumb":
+                                imgBuilder.thumbnailUrl(endpoints.imageUrl(
+                                        builder,
+                                        makeArgument("path", this.nextString(reader))
+                                ));
+                                break;
+                            case "mime":
+                                imgBuilder.extension(
+                                        MimeTypeMap.getSingleton().getExtensionFromMimeType(
+                                                this.nextString(reader)
+                                        )
+                                );
+                                break;
+                            case "size":
+                                imgBuilder.size(reader.nextLong());
+                                break;
+                            case "width":
+                                imgBuilder.imageWidth(this.nextInt(reader));
+                                break;
+                            case "height":
+                                imgBuilder.imageHeight(this.nextInt(reader));
+                                break;
+                            default:
+                                Logger.d("bunkerchan", "Unknown image property: " + imgProp);
+                                reader.skipValue();
+                                break;
+                        }
+                    }
+                    files.add(imgBuilder.build());
+                    reader.endObject();
+                }
+                builder.images(files);
+                reader.endArray();
+                break;
+            default:
+                Logger.d("bunkerchan", "Unknown post property: " + prop);
+                reader.skipValue();
+                return false;
+        }
+
+        return true;
     }
 
     // Have to do this because the catalog provides
