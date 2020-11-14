@@ -58,5 +58,6 @@ public class SiteRegistry {
         SITE_CLASSES.put(3, Arisuchan.class);
         SITE_CLASSES.put(4, Sushichan.class);
         SITE_CLASSES.put(5, Dvach.class);
+        SITE_CLASSES.put(6, Bunkerchan.class);
     }
 }
