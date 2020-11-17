@@ -154,6 +154,7 @@ public class BunkerchanApi extends CommonSite.CommonApi {
                 builder.comment(
                         this.nextString(reader)
                         .replaceAll("(&lt)([^;])", "&lt;$2") // Fix broken entities
+                        .replaceAll("\n", "<br>") // TODO: There might be a better place/way to do this
                 );
                 break;
             case "threadId":

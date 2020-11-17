@@ -17,14 +17,9 @@ import java.util.regex.Pattern;
 
 public class BunkerchanCommentParser extends CommentParser {
     public BunkerchanCommentParser() {
-        addDefaultRules();
+        // TODO: Board links don't work (e.g. >>>/tech/)
 
-        // TODO: Board links don't work (i.e ">>>/tech/")
-        rule(StyleRule
-                .tagRule("a")
-                .cssClass("quoteLink")
-                .blockElement(true)
-                .action(this::handleAnchor));
+        addDefaultRules();
 
         rule(StyleRule
                 .tagRule("span")
@@ -36,16 +31,14 @@ public class BunkerchanCommentParser extends CommentParser {
         rule(StyleRule
                 .tagRule("span")
                 .cssClass("greenText")
-                .blockElement(true)
                 .color(StyleRule.Color.INLINE_QUOTE));
 
         rule(StyleRule
                 .tagRule("span")
                 .cssClass("orangeText")
-                .blockElement(true)
                 .color(StyleRule.Color.QUOTE));
 
         setQuotePattern(Pattern.compile(".*#(\\d+)"));
-        setFullQuotePattern(Pattern.compile("/(\\w+)/\\w+/(\\d+)\\.html#(\\d+)"));
+        setFullQuotePattern(Pattern.compile("/(\\w+)/res/(\\d+)\\.html#(\\d+)"));
     }
 }
