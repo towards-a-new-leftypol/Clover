@@ -197,7 +197,13 @@ public class BunkerchanApi extends CommonSite.CommonApi {
 
                         switch (imgProp) {
                             case "originalName":
-                                imgBuilder.filename(this.nextString(reader));
+                                String originalName = this.nextString(reader);
+                                if (originalName.contains(".")) {
+                                    String[] originalNameParts = originalName.split("\\.");
+                                    imgBuilder.filename(String.join("", Arrays.copyOf(originalNameParts, originalNameParts.length-1)));
+                                } else {
+                                    imgBuilder.filename(originalName);
+                                }
                                 break;
                             case "path":
                                 imgBuilder.imageUrl(endpoints.imageUrl(
@@ -261,20 +267,29 @@ public class BunkerchanApi extends CommonSite.CommonApi {
         builder.imageUrl(thumbUrl);
         builder.thumbnailUrl(thumbUrl);
 
-        String[] parts = thumb.split("/");
+        String[] parts = thumb.split("\\/");
         String file = parts[parts.length-1];
         builder.filename(file);
 
+        Logger.d("bunkerchan file", file);
+        if (file.contains(".")) {
+            // Remove the file extension from the filename
+            String[] fileParts = file.split("\\.");
+            builder.filename(String.join("", Arrays.copyOf(fileParts, fileParts.length-1)));
+
+            // Extract the file extension from the filename
+            builder.extension(fileParts[fileParts.length - 1]);
+        }
         if (file.endsWith("gif")) {
             builder.extension("gif");
         } else if (file.endsWith("jpeg") || file.endsWith("jpg")) {
             builder.extension("jpg");
         } else if (file.endsWith("png")) {
             builder.extension("png");
-        } else {
-            // If we could not identify the proper extension,
-            // just use a default one
-            builder.extension("png");
+        } else if (file.endsWith("webm")) {
+            builder.extension("webm");
+        } else if (file.endsWith("mp4")) {
+            builder.extension("mp4");
         }
 
         return builder;
