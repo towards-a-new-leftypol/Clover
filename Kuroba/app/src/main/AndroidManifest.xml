@@ -105,6 +105,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
                 <data android:host="www.420chan.org" />
                 <data android:host="420chan.org" />
+
+                <data android:host="www.leftypol.org" />
+                <data android:host="leftypol.org" />
             </intent-filter>
 
         </activity>
