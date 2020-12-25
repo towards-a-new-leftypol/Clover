@@ -25,10 +25,8 @@ import com.github.adamantcheese.chan.core.site.common.CommonSite;
 import com.github.adamantcheese.chan.core.site.common.vichan.VichanApi;
 import com.github.adamantcheese.chan.core.site.common.vichan.VichanCommentParser;
 import com.github.adamantcheese.chan.core.site.common.vichan.VichanEndpoints;
-import com.github.adamantcheese.chan.core.site.http.HttpCall;
 
 import okhttp3.HttpUrl;
-import okhttp3.Request;
 
 public class Leftypol extends CommonSite {
     private static final String ROOT = "https://leftypol.org/";
@@ -46,7 +44,7 @@ public class Leftypol extends CommonSite {
 
         @Override
         public String[] getNames() {
-            return new String[]{"leftypol"};
+            return new String[]{"Leftypol"};
         }
 
         @Override
@@ -92,7 +90,7 @@ public class Leftypol extends CommonSite {
             }
         });
 
-        setEndpoints(new VichanEndpoints(this, "https://leftypol.org", "https://leftypol.org"));
+        setEndpoints(new VichanEndpoints(this, ROOT, ROOT));
         setActions(new LeftypolActions(this, ROOT));
         setApi(new VichanApi(this));
         setParser(new VichanCommentParser());
@@ -102,15 +100,5 @@ public class Leftypol extends CommonSite {
     @Override
     public ChunkDownloaderSiteProperties getChunkDownloaderSiteProperties() {
         return new ChunkDownloaderSiteProperties(Integer.MAX_VALUE, true);
-    }
-
-    @Override
-    public CommonCallModifier callModifier() {
-        return new CommonCallModifier() {
-            @Override
-            public void modifyHttpCall(HttpCall httpCall, Request.Builder requestBuilder) {
-                requestBuilder.header("Referer", "https://leftypol.org/b/res/7786.html");
-            }
-        };
     }
 }

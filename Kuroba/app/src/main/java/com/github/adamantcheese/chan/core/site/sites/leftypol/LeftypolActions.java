@@ -7,7 +7,6 @@ import com.github.adamantcheese.chan.core.site.common.MultipartHttpCall;
 import com.github.adamantcheese.chan.core.site.common.vichan.VichanActions;
 import com.github.adamantcheese.chan.core.site.http.HttpCall;
 import com.github.adamantcheese.chan.core.site.http.ReplyResponse;
-import com.github.adamantcheese.chan.core.site.sites.leftypol.LeftypolReplyCall;
 import com.github.adamantcheese.chan.utils.BackgroundUtils;
 
 import okhttp3.HttpUrl;
