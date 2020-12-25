@@ -1,4 +1,4 @@
-package com.github.adamantcheese.chan.core.site.sites;
+package com.github.adamantcheese.chan.core.site.sites.leftypol;
 
 import com.github.adamantcheese.chan.core.model.orm.Loadable;
 import com.github.adamantcheese.chan.core.net.NetUtils;
