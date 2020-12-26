@@ -90,7 +90,7 @@ public class Leftypol extends CommonSite {
             }
         });
 
-        setEndpoints(new VichanEndpoints(this, ROOT, ROOT));
+        setEndpoints(new LeftypolEndpoints(this, ROOT, ROOT));
         setActions(new LeftypolActions(this, ROOT));
         setApi(new VichanApi(this));
         setParser(new VichanCommentParser());
