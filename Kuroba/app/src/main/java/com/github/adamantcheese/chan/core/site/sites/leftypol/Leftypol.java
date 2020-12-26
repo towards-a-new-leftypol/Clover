@@ -56,6 +56,7 @@ public class Leftypol extends CommonSite {
                         .addPathSegment(loadable.boardCode)
                         .addPathSegment("res")
                         .addPathSegment(loadable.no + ".html")
+                        .fragment("q" + postNo)
                         .toString();
             } else {
                 return getUrl().toString();
@@ -74,10 +75,11 @@ public class Leftypol extends CommonSite {
                 Board.fromSiteNameCode(this, "Politically Incorrect", "leftypol"),
                 Board.fromSiteNameCode(this, "Random", "b"),
                 Board.fromSiteNameCode(this, "hobby", "hobby"),
-                Board.fromSiteNameCode(this, "tech", "tech"),
+                Board.fromSiteNameCode(this, "Technology", "tech"),
                 Board.fromSiteNameCode(this, "education", "edu"),
                 Board.fromSiteNameCode(this, "games", "games"),
                 Board.fromSiteNameCode(this, "anime", "anime"),
+                Board.fromSiteNameCode(this, "meta", "meta"),
                 Board.fromSiteNameCode(this, "gulag", "gulag")
         );
 
