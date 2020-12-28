@@ -87,7 +87,11 @@ public class Leftypol extends CommonSite {
         setConfig(new CommonConfig() {
             @Override
             public boolean siteFeature(SiteFeature siteFeature) {
-                return super.siteFeature(siteFeature) || siteFeature == SiteFeature.POSTING;
+                return  super.siteFeature(siteFeature) ||
+                        siteFeature == SiteFeature.POSTING ||
+                        siteFeature == SiteFeature.POST_DELETE;
+                        // TODO
+                        // siteFeature == SiteFeature.POST_REPORT;
             }
         });
 
