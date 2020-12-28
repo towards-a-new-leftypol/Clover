@@ -56,7 +56,7 @@ public class Leftypol extends CommonSite {
                         .addPathSegment(loadable.boardCode)
                         .addPathSegment("res")
                         .addPathSegment(loadable.no + ".html")
-                        .fragment("q" + postNo)
+                        .fragment(postNo + "")
                         .toString();
             } else {
                 return getUrl().toString();
@@ -74,13 +74,12 @@ public class Leftypol extends CommonSite {
         setBoards(
                 Board.fromSiteNameCode(this, "Politically Incorrect", "leftypol"),
                 Board.fromSiteNameCode(this, "Random", "b"),
-                Board.fromSiteNameCode(this, "hobby", "hobby"),
+                Board.fromSiteNameCode(this, "Hobby", "hobby"),
                 Board.fromSiteNameCode(this, "Technology", "tech"),
-                Board.fromSiteNameCode(this, "education", "edu"),
-                Board.fromSiteNameCode(this, "games", "games"),
+                Board.fromSiteNameCode(this, "Education", "edu"),
+                Board.fromSiteNameCode(this, "Games", "games"),
                 Board.fromSiteNameCode(this, "anime", "anime"),
-                Board.fromSiteNameCode(this, "meta", "meta"),
-                Board.fromSiteNameCode(this, "gulag", "gulag")
+                Board.fromSiteNameCode(this, "meta", "meta")
         );
 
         setResolvable(URL_HANDLER);
@@ -95,7 +94,7 @@ public class Leftypol extends CommonSite {
         setEndpoints(new LeftypolEndpoints(this, ROOT, ROOT));
         setActions(new LeftypolActions(this, ROOT));
         setApi(new VichanApi(this));
-        setParser(new VichanCommentParser());
+        setParser(new LeftypolCommentParser());
     }
 
     @NonNull
