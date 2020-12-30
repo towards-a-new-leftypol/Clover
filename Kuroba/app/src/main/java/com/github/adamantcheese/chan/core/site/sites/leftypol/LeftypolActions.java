@@ -22,6 +22,13 @@ public class LeftypolActions extends VichanActions {
     }
 
     @Override
+    public void setupPost(Loadable loadable, MultipartHttpCall call) {
+        super.setupPost(loadable, call);
+
+        call.parameter("user_flag", loadable.draft.flag);
+    }
+
+    @Override
     public void post(Loadable loadableWithDraft, PostListener postListener) {
         ReplyResponse replyResponse = new ReplyResponse(loadableWithDraft);
 

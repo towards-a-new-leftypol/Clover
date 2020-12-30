@@ -48,6 +48,7 @@ import com.github.adamantcheese.chan.core.site.http.Reply;
 import com.github.adamantcheese.chan.core.site.http.ReplyResponse;
 import com.github.adamantcheese.chan.core.site.parser.CommentParser;
 import com.github.adamantcheese.chan.core.site.sites.chan4.Chan4;
+import com.github.adamantcheese.chan.core.site.sites.leftypol.Leftypol;
 import com.github.adamantcheese.chan.ui.captcha.AuthenticationLayoutCallback;
 import com.github.adamantcheese.chan.ui.captcha.AuthenticationLayoutInterface;
 import com.github.adamantcheese.chan.ui.helper.ImagePickDelegate;
@@ -167,6 +168,7 @@ public class ReplyPresenter
             callback.openPreview(draft.file != null, draft.file);
         }
         boolean is4chan = loadable.site instanceof Chan4;
+        boolean isLeftypol = loadable.site instanceof Leftypol;
         callback.openCommentQuoteButton(moreOpen);
         if (loadable.board.spoilers) {
             callback.openCommentSpoilerButton(moreOpen);
@@ -182,6 +184,9 @@ public class ReplyPresenter
             callback.openCommentSJISButton(moreOpen);
         }
         if (is4chan && loadable.boardCode.equals("pol")) {
+            callback.openFlag(moreOpen);
+        }
+        if (isLeftypol) {
             callback.openFlag(moreOpen);
         }
     }
