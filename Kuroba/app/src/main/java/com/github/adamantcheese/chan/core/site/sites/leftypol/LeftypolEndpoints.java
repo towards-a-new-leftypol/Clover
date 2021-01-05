@@ -18,6 +18,14 @@ public class LeftypolEndpoints extends VichanEndpoints {
 
     @Override
     public HttpUrl thumbnailUrl(Post.Builder post, boolean spoiler, Map<String, String> arg) {
+
+        if (spoiler) {
+            return root.builder()
+                    .s("static")
+                    .s("spoiler.png")
+                    .url();
+        }
+
         String[] videoExts = new String[]{"mp4", "webm"};
         String[] bookExts = new String[]{"pdf", "epub"};
 
