@@ -97,7 +97,7 @@ public class Leftypol extends CommonSite {
 
         setEndpoints(new LeftypolEndpoints(this, ROOT, ROOT));
         setActions(new LeftypolActions(this, ROOT));
-        setApi(new VichanApi(this));
+        setApi(new LeftypolApi(this));
         setParser(new LeftypolCommentParser());
     }
 
