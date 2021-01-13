@@ -27,14 +27,14 @@ public class LeftypolEndpoints extends VichanEndpoints {
         }
 
         String[] videoExts = new String[]{"mp4", "webm"};
-        String[] bookExts = new String[]{"pdf", "epub", "txt"};
+        String[] noThumbExts = new String[]{"epub", "txt"};
 
         String ext = arg.get("ext");
         String finalExt = ".png";
 
         if (contains(videoExts, ext)) {
             finalExt = ".jpg";
-        } else if (contains(bookExts, ext)) {
+        } else if (contains(noThumbExts, ext)) {
             // Default book icon is a static file
             return root.builder()
                     .s("static")
