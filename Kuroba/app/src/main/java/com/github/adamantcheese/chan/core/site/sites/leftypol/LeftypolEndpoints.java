@@ -27,7 +27,7 @@ public class LeftypolEndpoints extends VichanEndpoints {
         }
 
         String[] videoExts = new String[]{"mp4", "webm"};
-        String[] bookExts = new String[]{"pdf", "epub"};
+        String[] bookExts = new String[]{"pdf", "epub", "txt"};
 
         String ext = arg.get("ext");
         String finalExt = ".png";
