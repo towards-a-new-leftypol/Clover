@@ -66,20 +66,24 @@ public class Leftypol extends CommonSite {
 
     public Leftypol() {
         setName("Leftypol");
-        setIcon(SiteIcon.fromFavicon(HttpUrl.parse("https://leftypol.org/favicon.ico")));
+        setIcon(SiteIcon.fromFavicon(HttpUrl.parse(ROOT + "favicon.ico")));
     }
 
     @Override
     public void setup() {
+
         setBoards(
-                Board.fromSiteNameCode(this, "Politically Incorrect", "leftypol"),
+                Board.fromSiteNameCode(this, "Leftist Politically Incorrect", "leftypol"),
+                Board.fromSiteNameCode(this, "Overboard", "overboard"),
                 Board.fromSiteNameCode(this, "Random", "b"),
                 Board.fromSiteNameCode(this, "Hobby", "hobby"),
                 Board.fromSiteNameCode(this, "Technology", "tech"),
                 Board.fromSiteNameCode(this, "Education", "edu"),
                 Board.fromSiteNameCode(this, "Games", "games"),
                 Board.fromSiteNameCode(this, "anime", "anime"),
-                Board.fromSiteNameCode(this, "meta", "meta")
+                Board.fromSiteNameCode(this, "meta", "meta"),
+                Board.fromSiteNameCode(this, "dead", "dead"),
+                Board.fromSiteNameCode(this, "gulag", "gulag")
         );
 
         setResolvable(URL_HANDLER);

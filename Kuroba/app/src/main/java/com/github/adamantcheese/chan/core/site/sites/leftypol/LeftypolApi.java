@@ -8,6 +8,7 @@ import androidx.core.util.Pair;
 import com.github.adamantcheese.chan.core.model.Post;
 import com.github.adamantcheese.chan.core.model.PostHttpIcon;
 import com.github.adamantcheese.chan.core.model.PostImage;
+import com.github.adamantcheese.chan.core.model.orm.Board;
 import com.github.adamantcheese.chan.core.site.SiteEndpoints;
 import com.github.adamantcheese.chan.core.site.common.CommonSite;
 import com.github.adamantcheese.chan.core.site.common.vichan.VichanApi;
@@ -77,6 +78,12 @@ public class LeftypolApi extends VichanApi {
                     break;
                 case "com":
                     comment = reader.nextString();
+                    break;
+                case "board":
+                    Board board = this.site.board(reader.nextString());
+                    if (board != null) {
+                        builder.board(board);
+                    }
                     break;
                 case "warning_msg":
                     warningMessage = reader.nextString();
@@ -173,6 +180,10 @@ public class LeftypolApi extends VichanApi {
             }
         }
         reader.endObject();
+
+        if (builder.board == null) {
+            Logger.d(this, "No board found!");
+        }
 
         // Build the comment containing ban/warning messages
         if (comment == null) {
