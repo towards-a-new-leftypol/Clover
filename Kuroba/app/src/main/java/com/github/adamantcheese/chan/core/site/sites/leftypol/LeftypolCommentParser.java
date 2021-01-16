@@ -22,6 +22,24 @@ public class LeftypolCommentParser extends VichanCommentParser {
 
         rule(StyleRule
                 .tagRule("span")
+                .cssClass("underline")
+                .underline()
+        );
+
+        rule(StyleRule
+                .tagRule("span")
+                .cssClass("strikethrough")
+                .strikeThrough()
+        );
+
+        rule(StyleRule
+                .tagRule("span")
+                .cssClass("orangeQuote")
+                .foregroundColor(StyleRule.ForegroundColor.QUOTE)
+        );
+
+        rule(StyleRule
+                .tagRule("span")
                 .cssClass("big-quote")
                 .bold()
                 .foregroundColor(StyleRule.ForegroundColor.QUOTE)
