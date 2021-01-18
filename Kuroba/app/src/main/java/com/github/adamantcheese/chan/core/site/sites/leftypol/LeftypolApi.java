@@ -20,6 +20,8 @@ import org.jsoup.parser.Parser;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import okhttp3.HttpUrl;
 
@@ -57,6 +59,9 @@ public class LeftypolApi extends VichanApi {
 
         List<PostImage> files = new ArrayList<>();
 
+        Pattern ytRegex = Pattern.compile("data-video=\\\"([a-zA-z0-9]{11})\\\"");
+        String embedLink = null;
+
         // Country flag
         String countryCode = null;
         String trollCountryCode = null;
@@ -83,6 +88,12 @@ public class LeftypolApi extends VichanApi {
                     Board board = this.site.board(reader.nextString());
                     if (board != null) {
                         builder.board(board);
+                    }
+                    break;
+                case "embed":
+                    Matcher match = ytRegex.matcher(reader.nextString());
+                    if (match.find()) {
+                        embedLink = "https://youtu.be/" + match.group(1);
                     }
                     break;
                 case "warning_msg":
@@ -185,9 +196,15 @@ public class LeftypolApi extends VichanApi {
             Logger.d(this, "No board found!");
         }
 
-        // Build the comment containing ban/warning messages
+        // Build the comment containing the embed and ban/warning messages
         if (comment == null) {
             comment = "";
+        }
+        if (embedLink != null) {
+            if (!comment.equals("")) {
+                comment += "<br/><br/>";
+            }
+            comment += embedLink;
         }
         if (warningMessage != null) {
             comment += "<br/><br/>" +
