@@ -16,9 +16,8 @@
  */
 package com.github.adamantcheese.chan.core.di;
 
-import com.franmontiel.persistentcookiejar.PersistentCookieJar;
-import com.franmontiel.persistentcookiejar.cache.SetCookieCache;
-import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor;
+import android.webkit.CookieManager;
+
 import com.github.adamantcheese.chan.BuildConfig;
 import com.github.adamantcheese.chan.core.cache.CacheHandler;
 import com.github.adamantcheese.chan.core.cache.FileCacheV2;
@@ -35,19 +34,22 @@ import org.codejargon.feather.Provides;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 import javax.inject.Singleton;
 
+import okhttp3.Cookie;
 import okhttp3.CookieJar;
+import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 
 import static com.github.adamantcheese.chan.core.di.AppModule.getCacheDir;
 import static com.github.adamantcheese.chan.core.net.DnsSelector.Mode.IPV4_ONLY;
 import static com.github.adamantcheese.chan.core.net.DnsSelector.Mode.SYSTEM;
-import static com.github.adamantcheese.chan.utils.AndroidUtils.getAppContext;
 import static com.github.adamantcheese.chan.utils.AndroidUtils.getApplicationLabel;
 import static okhttp3.Protocol.HTTP_1_1;
 import static okhttp3.Protocol.HTTP_2;
@@ -113,19 +115,50 @@ public class NetModule {
     public static class OkHttpClientWithUtils
             extends OkHttpClient {
 
-        private CookieJar cookies = null;
+        private static CookieJar cookies = null;
 
         public OkHttpClientWithUtils(Builder builder) {
             super(builder);
+        }
+
+        private static List<Cookie> parseCookies(HttpUrl url, String allCookies) {
+            // CookieJar jar = NetModule.OkHttpClientWithUtils.getCookies();
+            ArrayList<Cookie> cookies = new ArrayList<>();
+
+            if (allCookies.length() <= 0) {
+                return cookies;
+            }
+
+            for (String cookie : allCookies.split(";")) {
+                cookies.add(Cookie.parse(url, cookie.trim()));
+            }
+
+            return cookies;
         }
 
         @NotNull
         @Override
         public Builder newBuilder() {
             if (cookies == null) {
-                cookies = new PersistentCookieJar(new SetCookieCache(), new SharedPrefsCookiePersistor(
-                        getAppContext()
-                ));
+                cookies = new CookieJar(){
+                    @Override
+                    public void saveFromResponse(@NotNull HttpUrl httpUrl, @NotNull List<Cookie> list) {
+                        // Right now the only cookies that matter are the ones coming from
+                        // the js challenge, which are handled by the ChallengeController.
+                        // TODO: Implement
+                    }
+
+                    @NotNull
+                    @Override
+                    public List<Cookie> loadForRequest(@NotNull HttpUrl httpUrl) {
+                        String cookies = CookieManager.getInstance().getCookie(httpUrl.toString());
+                        if (cookies == null) {
+                            cookies = "";
+                        }
+
+                        return parseCookies(httpUrl, cookies);
+                    }
+                };
             }
 
             return super.newBuilder()

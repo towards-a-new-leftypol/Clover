@@ -255,8 +255,6 @@ dependencies {
     implementation 'com.github.K1rakishou:Fuck-Storage-Access-Framework:v1.0-alpha42'
 
     //debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.4'
-
-    implementation 'com.github.franmontiel:PersistentCookieJar:v1.0.1'
 }
 
 // Download the current archives.json
