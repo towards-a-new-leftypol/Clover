@@ -65,6 +65,7 @@ import com.github.adamantcheese.chan.ui.view.LoadView;
 import com.github.adamantcheese.chan.ui.view.ThumbnailView;
 import com.github.adamantcheese.chan.utils.AndroidUtils;
 import com.github.adamantcheese.chan.utils.BackgroundUtils;
+import com.github.adamantcheese.chan.utils.Logger;
 import com.google.android.material.snackbar.Snackbar;
 
 import java.util.ArrayList;
@@ -259,6 +260,10 @@ public class ThreadLayout
     @Override
     public void showError(ChanThreadLoader.ChanLoaderException error) {
         String errorMessage = getString(error.getErrorMessage());
+
+        if (error.isNotAvailable()) {
+            callback.showChallenge(presenter.getLoadable());
+        }
 
         if (visible == Visible.THREAD) {
             threadListLayout.showError(errorMessage);
@@ -764,6 +769,8 @@ public class ThreadLayout
     }
 
     public interface ThreadLayoutCallback {
+        void showChallenge(Loadable loadableBehindChallenge);
+
         void showThread(Loadable threadLoadable);
 
         void showBoard(Loadable catalogLoadable);
