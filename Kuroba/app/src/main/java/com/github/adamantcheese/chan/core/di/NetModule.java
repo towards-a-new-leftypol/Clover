@@ -16,6 +16,9 @@
  */
 package com.github.adamantcheese.chan.core.di;
 
+import com.franmontiel.persistentcookiejar.PersistentCookieJar;
+import com.franmontiel.persistentcookiejar.cache.SetCookieCache;
+import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersistor;
 import com.github.adamantcheese.chan.BuildConfig;
 import com.github.adamantcheese.chan.core.cache.CacheHandler;
 import com.github.adamantcheese.chan.core.cache.FileCacheV2;
@@ -29,6 +32,7 @@ import com.github.k1rakishou.fsaf.FileManager;
 import com.github.k1rakishou.fsaf.file.RawFile;
 
 import org.codejargon.feather.Provides;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.Arrays;
@@ -36,12 +40,14 @@ import java.util.Collections;
 
 import javax.inject.Singleton;
 
+import okhttp3.CookieJar;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 
 import static com.github.adamantcheese.chan.core.di.AppModule.getCacheDir;
 import static com.github.adamantcheese.chan.core.net.DnsSelector.Mode.IPV4_ONLY;
 import static com.github.adamantcheese.chan.core.net.DnsSelector.Mode.SYSTEM;
+import static com.github.adamantcheese.chan.utils.AndroidUtils.getAppContext;
 import static com.github.adamantcheese.chan.utils.AndroidUtils.getApplicationLabel;
 import static okhttp3.Protocol.HTTP_1_1;
 import static okhttp3.Protocol.HTTP_2;
@@ -107,8 +113,23 @@ public class NetModule {
     public static class OkHttpClientWithUtils
             extends OkHttpClient {
 
+        private CookieJar cookies = null;
+
         public OkHttpClientWithUtils(Builder builder) {
             super(builder);
+        }
+
+        @NotNull
+        @Override
+        public Builder newBuilder() {
+            if (cookies == null) {
+                cookies = new PersistentCookieJar(new SetCookieCache(), new SharedPrefsCookiePersistor(
+                        getAppContext()
+                ));
+            }
+
+            return super.newBuilder()
+                    .cookieJar(cookies);
         }
 
         //This adds a proxy to the base client
