@@ -377,6 +377,17 @@ public class BrowseController
         setBoard(catalogLoadable.board);
     }
 
+    @Override
+    public void showChallenge(Loadable loadable) {
+        ChallengeController c = new ChallengeController(context, loadable);
+
+        if (doubleNavigationController != null) {
+            doubleNavigationController.pushController(c);
+        } else {
+            navigationController.pushController(c);
+        }
+    }
+
     // Creates or updates the target ViewThreadController
     // This controller can be in various places depending on the layout, so we dynamically search for it
     @Override

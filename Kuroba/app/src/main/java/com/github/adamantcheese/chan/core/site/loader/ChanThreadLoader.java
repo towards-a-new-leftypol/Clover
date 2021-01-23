@@ -400,6 +400,10 @@ public class ChanThreadLoader {
             return exception instanceof HttpCodeException && ((HttpCodeException) exception).isServerErrorNotFound();
         }
 
+        public boolean isNotAvailable() {
+            return exception instanceof HttpCodeException && ((HttpCodeException) exception).code == 503;
+        }
+
         public int getErrorMessage() {
             //by default, a network error has occurred if the exception field is not null
             int errorMessage = exception != null ? R.string.thread_load_failed_network : R.string.empty;
