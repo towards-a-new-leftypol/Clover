@@ -1,11 +1,14 @@
 package com.github.adamantcheese.chan.ui.controller;
 
 import android.content.Context;
+import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
 
 import com.github.adamantcheese.chan.controller.Controller;
 import com.github.adamantcheese.chan.core.di.NetModule;
 import com.github.adamantcheese.chan.core.model.orm.Loadable;
+import com.github.adamantcheese.chan.core.site.common.CommonSite;
 
 public class ChallengeController extends Controller {
     protected Loadable behindChallenge;
@@ -22,9 +25,22 @@ public class ChallengeController extends Controller {
         super.onCreate();
 
         web = new WebView(context);
-        web.loadUrl(behindChallenge.desktopUrl());
+        web.setWebViewClient(new WebViewClient(){
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                return false;
+            }
+        });
+
+        CommonSite.CommonCallModifier siteCallModifier = behindChallenge.site.callModifier();
+        if (siteCallModifier != null) {
+            siteCallModifier.modifyWebView(web);
+        }
+
         web.getSettings().setJavaScriptEnabled(true);
+        web.getSettings().setDomStorageEnabled(true);
         web.getSettings().setUserAgentString(NetModule.USER_AGENT);
+        web.loadUrl(behindChallenge.desktopUrl());
 
         this.view = web;
     }
