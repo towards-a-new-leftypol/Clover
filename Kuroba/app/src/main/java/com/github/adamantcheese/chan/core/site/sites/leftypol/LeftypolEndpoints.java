@@ -18,6 +18,7 @@ public class LeftypolEndpoints extends VichanEndpoints {
 
     @Override
     public HttpUrl thumbnailUrl(Post.Builder post, boolean spoiler, Map<String, String> arg) {
+        String ext = arg.get("ext");
 
         if (spoiler) {
             return root.builder()
@@ -26,10 +27,16 @@ public class LeftypolEndpoints extends VichanEndpoints {
                     .url();
         }
 
+        if (ext.equals("zip")) {
+            return root.builder()
+                    .s("static")
+                    .s("zip.png")
+                    .url();
+        }
+
         String[] videoExts = new String[]{"mp4", "webm"};
         String[] noThumbExts = new String[]{"epub", "txt"};
 
-        String ext = arg.get("ext");
         String finalExt = ".png";
 
         if (contains(videoExts, ext)) {
