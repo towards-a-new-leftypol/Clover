@@ -365,6 +365,8 @@ Enabled filters have priority from top to bottom in your list. Filter precedence
 
     <string name="drawer_settings">Settings</string>
 
+    <string name="challenge_screen">Site Challenge</string>
+
     <!-- Main settings -->
     <string name="settings_screen">Settings</string>
 
