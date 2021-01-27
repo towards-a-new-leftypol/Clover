@@ -37,6 +37,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 import javax.inject.Singleton;
@@ -122,7 +123,6 @@ public class NetModule {
         }
 
         private static List<Cookie> parseCookies(HttpUrl url, String allCookies) {
-            // CookieJar jar = NetModule.OkHttpClientWithUtils.getCookies();
             ArrayList<Cookie> cookies = new ArrayList<>();
 
             if (allCookies.length() <= 0) {
@@ -143,9 +143,23 @@ public class NetModule {
                 cookies = new CookieJar(){
                     @Override
                     public void saveFromResponse(@NotNull HttpUrl httpUrl, @NotNull List<Cookie> list) {
-                        // Right now the only cookies that matter are the ones coming from
-                        // the js challenge, which are handled by the ChallengeController.
-                        // TODO: Implement
+                        String str = "";
+
+                        Iterator<Cookie> it = list.iterator();
+
+                        if (it.hasNext()) {
+                            Cookie c = it.next();
+                            str = c.name() + "=" + c.value();
+                        }
+
+                        while (it.hasNext()) {
+                            Cookie c = it.next();
+                            str += "; " + c.name() + "=" + c.value();
+                        }
+
+                        if (!str.equals("")) {
+                            CookieManager.getInstance().setCookie(httpUrl.resolve("/").toString(), str);
+                        }
                     }
 
                     @NotNull
@@ -156,7 +170,7 @@ public class NetModule {
                             cookies = "";
                         }
 
-                        return parseCookies(httpUrl, cookies);
+                        return parseCookies(httpUrl.resolve("/"), cookies);
                     }
                 };
             }

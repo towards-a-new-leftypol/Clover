@@ -5,10 +5,12 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import com.github.adamantcheese.chan.R;
 import com.github.adamantcheese.chan.controller.Controller;
 import com.github.adamantcheese.chan.core.di.NetModule;
 import com.github.adamantcheese.chan.core.model.orm.Loadable;
 import com.github.adamantcheese.chan.core.site.common.CommonSite;
+import com.github.adamantcheese.chan.utils.AndroidUtils;
 
 public class ChallengeController extends Controller {
     protected Loadable behindChallenge;
@@ -23,6 +25,7 @@ public class ChallengeController extends Controller {
     @Override
     public void onCreate() {
         super.onCreate();
+        navigation.title = AndroidUtils.getString(R.string.challenge_screen);
 
         web = new WebView(context);
         web.setWebViewClient(new WebViewClient(){
