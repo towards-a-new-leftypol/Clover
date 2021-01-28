@@ -59,7 +59,7 @@ public class LeftypolApi extends VichanApi {
 
         List<PostImage> files = new ArrayList<>();
 
-        Pattern ytRegex = Pattern.compile("data-video=\\\"([a-zA-z0-9]{11})\\\"");
+        Pattern ytRegex = Pattern.compile("data-video=\\\"([a-zA-z0-9-]{11})\\\"");
         String embedLink = null;
 
         // Country flag
