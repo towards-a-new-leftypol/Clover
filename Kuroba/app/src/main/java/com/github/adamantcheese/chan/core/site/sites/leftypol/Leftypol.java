@@ -20,11 +20,14 @@ import androidx.annotation.NonNull;
 
 import com.github.adamantcheese.chan.core.model.orm.Board;
 import com.github.adamantcheese.chan.core.model.orm.Loadable;
+import com.github.adamantcheese.chan.core.site.Site;
 import com.github.adamantcheese.chan.core.site.SiteIcon;
 import com.github.adamantcheese.chan.core.site.common.CommonSite;
 import com.github.adamantcheese.chan.core.site.common.vichan.VichanApi;
 import com.github.adamantcheese.chan.core.site.common.vichan.VichanCommentParser;
 import com.github.adamantcheese.chan.core.site.common.vichan.VichanEndpoints;
+
+import java.util.List;
 
 import okhttp3.HttpUrl;
 
@@ -61,6 +64,49 @@ public class Leftypol extends CommonSite {
             } else {
                 return getUrl().toString();
             }
+        }
+
+        @Override
+        public Loadable resolveLoadable(Site site, HttpUrl url) {
+            List<String> parts = url.pathSegments();
+            if (!parts.isEmpty()) {
+                String boardCode = parts.get(0);
+                Board board = site.board(boardCode);
+                if (board != null) {
+                    if (parts.size() < 3) {
+                        // Board mode
+                        return Loadable.forCatalog(board);
+                    } else {
+                        // Thread mode
+                        int no;
+                        try {
+                            no = Integer.parseInt(parts.get(2).replace(".html", ""));
+                        } catch (NumberFormatException ignored) {
+                            no = -1;
+                        }
+
+                        int post = -1;
+                        String fragment = url.fragment();
+                        if (fragment != null) {
+                            try {
+                                post = Integer.parseInt(fragment);
+                            } catch (NumberFormatException ignored) {
+                            }
+                        }
+
+                        if (no >= 0) {
+                            Loadable loadable = Loadable.forThread(board, no, "");
+                            if (post >= 0) {
+                                loadable.markedNo = post;
+                            }
+
+                            return loadable;
+                        }
+                    }
+                }
+            }
+
+            return null;
         }
     };
 
@@ -103,6 +149,8 @@ public class Leftypol extends CommonSite {
         setApi(new LeftypolApi(this));
         setParser(new LeftypolCommentParser());
     }
+
+
 
     @NonNull
     @Override
