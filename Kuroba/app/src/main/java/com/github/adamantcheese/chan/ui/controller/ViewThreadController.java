@@ -19,7 +19,6 @@ package com.github.adamantcheese.chan.ui.controller;
 import android.content.Context;
 import android.view.View;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.core.util.Pair;
 
 import com.github.adamantcheese.chan.R;
@@ -61,9 +60,8 @@ import javax.inject.Inject;
 
 import static com.github.adamantcheese.chan.ui.toolbar.ToolbarMenu.OVERFLOW_ID;
 import static com.github.adamantcheese.chan.ui.widget.CancellableToast.showToast;
+import static com.github.adamantcheese.chan.ui.widget.DefaultAlertDialog.getDefaultAlertBuilder;
 import static com.github.adamantcheese.chan.utils.AndroidUtils.getAttrColor;
-import static com.github.adamantcheese.chan.utils.AndroidUtils.openLinkInBrowser;
-import static com.github.adamantcheese.chan.utils.AndroidUtils.shareLink;
 
 public class ViewThreadController
         extends ThreadController
@@ -133,8 +131,8 @@ public class ViewThreadController
                 () -> threadLayout.getPresenter().showRemovedPostsDialog()
         )
                 .withSubItem(R.string.view_my_posts, this::showYourPosts)
-                .withSubItem(R.string.action_open_browser, this::openBrowserClicked)
-                .withSubItem(R.string.action_share, this::shareClicked)
+                .withSubItem(R.string.action_open_browser, () -> handleShareAndOpenInBrowser(false))
+                .withSubItem(R.string.action_share, () -> handleShareAndOpenInBrowser(true))
                 .withSubItem(R.string.action_scroll_to_top, () -> threadLayout.scrollTo(0, false))
                 .withSubItem(R.string.action_scroll_to_bottom, () -> threadLayout.scrollTo(-1, false));
 
@@ -167,26 +165,6 @@ public class ViewThreadController
         } else {
             threadLayout.showPostsPopup(null, yourPosts);
         }
-    }
-
-    private void openBrowserClicked() {
-        if (threadLayout.getPresenter().getChanThread() == null) {
-            showToast(context, R.string.cannot_open_in_browser_already_deleted);
-            return;
-        }
-
-        Loadable loadable = threadLayout.getPresenter().getLoadable();
-        openLinkInBrowser(context, loadable.desktopUrl());
-    }
-
-    private void shareClicked() {
-        if (threadLayout.getPresenter().getChanThread() == null) {
-            showToast(context, R.string.cannot_shared_thread_already_deleted);
-            return;
-        }
-
-        Loadable loadable = threadLayout.getPresenter().getLoadable();
-        shareLink(loadable.desktopUrl());
     }
 
     @Override
@@ -237,7 +215,7 @@ public class ViewThreadController
         if (threadLoadable.site instanceof ExternalSiteArchive && !loadable.site.equals(threadLoadable.site)) {
             showThreadInternal(threadLoadable);
         } else {
-            new AlertDialog.Builder(context).setNegativeButton(R.string.cancel, null)
+            getDefaultAlertBuilder(context).setNegativeButton(R.string.cancel, null)
                     .setPositiveButton(R.string.ok, (dialog, which) -> showThreadInternal(threadLoadable))
                     .setTitle(!(threadLoadable.site instanceof ExternalSiteArchive)
                             ? R.string.open_thread_confirmation
@@ -441,7 +419,7 @@ public class ViewThreadController
             return;
         }
 
-        int drawable = pin != null && pin.watching
+        int drawable = pin != null
                 ? R.drawable.ic_fluent_bookmark_24_filled
                 : R.drawable.ic_fluent_bookmark_24_regular;
         menuItem.setImage(drawable, animated);

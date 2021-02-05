@@ -44,6 +44,8 @@ import com.github.adamantcheese.chan.controller.Controller;
 import com.github.adamantcheese.chan.core.model.Post;
 import com.github.adamantcheese.chan.core.model.PostImage;
 import com.github.adamantcheese.chan.core.model.orm.Loadable;
+import com.github.adamantcheese.chan.core.net.NetUtils;
+import com.github.adamantcheese.chan.core.net.NetUtilsClasses;
 import com.github.adamantcheese.chan.core.presenter.ImageViewerPresenter;
 import com.github.adamantcheese.chan.core.repository.BitmapRepository;
 import com.github.adamantcheese.chan.core.saver.ImageSaveTask;
@@ -64,8 +66,6 @@ import com.github.adamantcheese.chan.ui.view.OptionalSwipeViewPager;
 import com.github.adamantcheese.chan.ui.view.ThumbnailView;
 import com.github.adamantcheese.chan.ui.view.TransitionImageView;
 import com.github.adamantcheese.chan.utils.Logger;
-import com.github.adamantcheese.chan.core.net.NetUtils;
-import com.github.adamantcheese.chan.core.net.NetUtilsClasses;
 import com.github.adamantcheese.chan.utils.StringUtils;
 
 import java.io.File;
@@ -497,9 +497,7 @@ public class ImageViewerController
             }
         });
 
-        NetUtils.makeBitmapRequest(ChanSettings.shouldUseFullSizeImage(postImage) ? (postImage.spoiler()
-                ? postImage.getThumbnailUrl()
-                : postImage.imageUrl) : postImage.getThumbnailUrl(), new NetUtilsClasses.BitmapResult() {
+        NetUtils.makeBitmapRequest(postImage.getThumbnailUrl(), new NetUtilsClasses.BitmapResult() {
             @Override
             public void onBitmapFailure(@NonNull HttpUrl source, Exception e) {
                 Logger.e(
@@ -507,7 +505,7 @@ public class ImageViewerController
                         "onBitmapFailure for preview in transition, cannot show correct transition bitmap",
                         e
                 );
-                previewImage.setBitmap(BitmapRepository.error);
+                previewImage.setBitmap(BitmapRepository.empty);
                 startAnimation.start();
             }
 

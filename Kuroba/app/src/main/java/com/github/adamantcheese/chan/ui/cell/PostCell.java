@@ -59,6 +59,8 @@ import com.github.adamantcheese.chan.core.model.PostHttpIcon;
 import com.github.adamantcheese.chan.core.model.PostImage;
 import com.github.adamantcheese.chan.core.model.PostLinkable;
 import com.github.adamantcheese.chan.core.model.orm.Loadable;
+import com.github.adamantcheese.chan.core.net.NetUtils;
+import com.github.adamantcheese.chan.core.net.NetUtilsClasses;
 import com.github.adamantcheese.chan.core.repository.BitmapRepository;
 import com.github.adamantcheese.chan.core.repository.PageRepository;
 import com.github.adamantcheese.chan.core.settings.ChanSettings;
@@ -74,8 +76,6 @@ import com.github.adamantcheese.chan.ui.view.FloatingMenu;
 import com.github.adamantcheese.chan.ui.view.FloatingMenuItem;
 import com.github.adamantcheese.chan.ui.view.PostImageThumbnailView;
 import com.github.adamantcheese.chan.ui.view.ThumbnailView;
-import com.github.adamantcheese.chan.core.net.NetUtils;
-import com.github.adamantcheese.chan.core.net.NetUtilsClasses;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -86,9 +86,7 @@ import okhttp3.Call;
 import okhttp3.HttpUrl;
 
 import static android.text.TextUtils.isEmpty;
-import static android.view.View.MeasureSpec.AT_MOST;
 import static android.view.View.MeasureSpec.EXACTLY;
-import static android.view.View.MeasureSpec.UNSPECIFIED;
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 import static android.widget.RelativeLayout.ALIGN_PARENT_BOTTOM;
@@ -96,15 +94,15 @@ import static android.widget.RelativeLayout.ALIGN_PARENT_RIGHT;
 import static android.widget.RelativeLayout.BELOW;
 import static android.widget.RelativeLayout.RIGHT_OF;
 import static com.github.adamantcheese.chan.Chan.instance;
+import static com.github.adamantcheese.chan.core.settings.ChanSettings.getThumbnailSize;
 import static com.github.adamantcheese.chan.ui.adapter.PostsFilter.Order.isNotBumpOrder;
 import static com.github.adamantcheese.chan.utils.AndroidUtils.dp;
 import static com.github.adamantcheese.chan.utils.AndroidUtils.getAttrColor;
-import static com.github.adamantcheese.chan.utils.AndroidUtils.getDimen;
-import static com.github.adamantcheese.chan.utils.AndroidUtils.getDisplaySize;
 import static com.github.adamantcheese.chan.utils.AndroidUtils.getQuantityString;
 import static com.github.adamantcheese.chan.utils.AndroidUtils.getString;
 import static com.github.adamantcheese.chan.utils.AndroidUtils.openIntent;
 import static com.github.adamantcheese.chan.utils.AndroidUtils.sp;
+import static com.github.adamantcheese.chan.utils.AndroidUtils.waitForLayout;
 import static com.github.adamantcheese.chan.utils.PostUtils.getReadableFileSize;
 import static com.github.adamantcheese.chan.utils.StringUtils.applySearchSpans;
 
@@ -134,8 +132,6 @@ public class PostCell
     private boolean highlighted;
     private int markedNo;
     private String searchQuery;
-
-    private RecyclerView recyclerView;
 
     private GestureDetector doubleTapComment;
 
@@ -173,6 +169,7 @@ public class PostCell
             detailsSizePx = sp(textSizeSp - 4);
 
             thumbnailViews.addItemDecoration(new DPSpacingItemDecoration(2));
+            ((MarginLayoutParams) thumbnailViews.getLayoutParams()).setMargins(paddingPx, paddingPx, 0, paddingPx);
 
             title.setTextSize(textSizeSp);
             title.setPadding(paddingPx, paddingPx - dp(2), dp(16), 0);
@@ -248,8 +245,7 @@ public class PostCell
             ChanSettings.PostViewMode postViewMode,
             boolean compact,
             String searchQuery,
-            Theme theme,
-            RecyclerView attachedTo
+            Theme theme
     ) {
         if (this.post != null && bound) {
             unbindPost(this.post);
@@ -263,7 +259,6 @@ public class PostCell
         this.highlighted = highlighted;
         this.markedNo = markedNo;
         this.searchQuery = searchQuery;
-        this.recyclerView = attachedTo;
 
         bindPost(theme, post);
 
@@ -322,7 +317,7 @@ public class PostCell
             filterMatchColor.setVisibility(GONE);
         }
 
-        thumbnailViews.setAdapter(new PostImagesAdapter());
+        thumbnailViews.swapAdapter(new PostImagesAdapter(), false);
         if (post.images.isEmpty() || ChanSettings.textOnly.get()) {
             thumbnailViews.setVisibility(GONE);
         } else {
@@ -518,10 +513,12 @@ public class PostCell
             replies.setVisibility(GONE);
         }
 
-        if (ChanSettings.shiftPostFormat.get()) {
-            clearShiftPostFormatting();
-            doShiftPostFormatting();
-        }
+        // in order for proper measurement to occur for shift-post formatting, this cell needs to be not-shifted first
+        clearShiftPostFormatting();
+        waitForLayout(this, view -> {
+            // we now know the measurements of all the views, so we can shift-format stuff without issue
+            return doShiftPostFormatting();
+        });
 
         findViewById(R.id.embed_spinner).setVisibility(GONE);
         embedCalls.addAll(EmbeddingEngine.getInstance().embed(theme, post, this));
@@ -530,7 +527,8 @@ public class PostCell
         }
     }
 
-    public void clearShiftPostFormatting() {
+    private void clearShiftPostFormatting() {
+        if (!ChanSettings.shiftPostFormat.get()) return;
         RelativeLayout.LayoutParams commentParams = new RelativeLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
         commentParams.alignWithParent = true;
         commentParams.addRule(BELOW, R.id.icons);
@@ -549,53 +547,30 @@ public class PostCell
         replies.setGravity(Gravity.BOTTOM);
     }
 
-    private void doShiftPostFormatting() {
-        if (comment.getVisibility() == VISIBLE && post.images.size() == 1 && !ChanSettings.textOnly.get()) {
-            int widthMax = recyclerView.getMeasuredWidth();
-            int heightMax = recyclerView.getMeasuredHeight();
-            int thumbnailSize =
-                    getDimen(getContext(), R.dimen.cell_post_thumbnail_size) * ChanSettings.thumbnailSize.get() / 100;
-
-            //get the width of the cell for calculations, height we don't need but measure it anyways
-            this.measure(MeasureSpec.makeMeasureSpec(inPopup ? getDisplaySize().x : widthMax, AT_MOST),
-                    MeasureSpec.makeMeasureSpec(heightMax, AT_MOST)
-            );
-
-            int totalThumbnailWidth = thumbnailSize + paddingPx + (post.filterHighlightedColor != 0
-                    ? filterMatchColor.getLayoutParams().width
-                    : 0);
-            //we want the heights here, but the widths must be the exact size between the thumbnail and view edge so that we calculate offsets right
-            title.measure(MeasureSpec.makeMeasureSpec(this.getMeasuredWidth() - totalThumbnailWidth, EXACTLY),
-                    MeasureSpec.makeMeasureSpec(0, UNSPECIFIED)
-            );
-            icons.measure(MeasureSpec.makeMeasureSpec(this.getMeasuredWidth() - totalThumbnailWidth, EXACTLY),
-                    MeasureSpec.makeMeasureSpec(0, UNSPECIFIED)
-            );
-            comment.measure(MeasureSpec.makeMeasureSpec(this.getMeasuredWidth() - totalThumbnailWidth, EXACTLY),
-                    MeasureSpec.makeMeasureSpec(0, UNSPECIFIED)
-            );
-            int thumbnailHeight = thumbnailSize + paddingPx + dp(2);
-            int wrapHeight = title.getMeasuredHeight() + icons.getMeasuredHeight();
-            int extraWrapHeight = wrapHeight + comment.getMeasuredHeight();
-            //wrap if the title+icons height is larger than 0.8x the thumbnail size, or if everything is over 1.6x the thumbnail size
-            if ((wrapHeight >= 0.8f * thumbnailHeight) || extraWrapHeight >= 1.6f * thumbnailHeight) {
-                RelativeLayout.LayoutParams commentParams = (RelativeLayout.LayoutParams) comment.getLayoutParams();
-                commentParams.removeRule(RelativeLayout.RIGHT_OF);
-                if (title.getMeasuredHeight() + (icons.getVisibility() == VISIBLE ? icons.getMeasuredHeight() : 0)
-                        < thumbnailHeight) {
-                    commentParams.addRule(RelativeLayout.BELOW, R.id.thumbnail_views);
-                } else {
-                    commentParams.addRule(RelativeLayout.BELOW,
-                            (icons.getVisibility() == VISIBLE ? R.id.icons : R.id.title)
-                    );
-                }
-                comment.setLayoutParams(commentParams);
-
-                RelativeLayout.LayoutParams replyParams = (RelativeLayout.LayoutParams) replies.getLayoutParams();
-                replyParams.removeRule(RelativeLayout.RIGHT_OF);
-                replies.setLayoutParams(replyParams);
+    private boolean doShiftPostFormatting() {
+        if (!ChanSettings.shiftPostFormat.get() || comment.getVisibility() != VISIBLE || post.images.size() != 1
+                || ChanSettings.textOnly.get()) return true;
+        float wrapHeightCheck = 0.8f * thumbnailViews.getHeight();
+        int wrapHeightActual = title.getHeight() + icons.getHeight();
+        if ((wrapHeightActual >= wrapHeightCheck) || wrapHeightActual + comment.getHeight() >= 2f * wrapHeightCheck) {
+            RelativeLayout.LayoutParams commentParams = (RelativeLayout.LayoutParams) comment.getLayoutParams();
+            commentParams.removeRule(RelativeLayout.RIGHT_OF);
+            if (title.getHeight() + (icons.getVisibility() == VISIBLE ? icons.getHeight() : 0)
+                    < thumbnailViews.getHeight()) {
+                commentParams.addRule(RelativeLayout.BELOW, R.id.thumbnail_views);
+            } else {
+                commentParams.addRule(RelativeLayout.BELOW,
+                        (icons.getVisibility() == VISIBLE ? R.id.icons : R.id.title)
+                );
             }
+            comment.setLayoutParams(commentParams);
+
+            RelativeLayout.LayoutParams replyParams = (RelativeLayout.LayoutParams) replies.getLayoutParams();
+            replyParams.removeRule(RelativeLayout.RIGHT_OF);
+            replies.setLayoutParams(replyParams);
+            return false;
         }
+        return true;
     }
 
     @Override
@@ -625,7 +600,6 @@ public class PostCell
 
     private void unbindPost(Post post) {
         bound = false;
-        thumbnailViews.setAdapter(null);
         icons.cancelRequests();
         title.setOnLongClickListener(null);
         title.setLongClickable(false);
@@ -752,14 +726,17 @@ public class PostCell
 
     private class PostImagesAdapter
             extends RecyclerView.Adapter<PostImagesAdapter.PostImageViewHolder> {
+        public PostImagesAdapter() {
+            setHasStableIds(true);
+        }
+
         @NonNull
         @Override
         public PostImageViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             PostImageThumbnailView thumbnailView = new PostImageThumbnailView(parent.getContext());
-            int thumbSize =
-                    getDimen(getContext(), R.dimen.cell_post_thumbnail_size) * ChanSettings.thumbnailSize.get() / 100;
-            thumbnailView.setLayoutParams(new ViewGroup.MarginLayoutParams(thumbSize, thumbSize));
+            thumbnailView.setLayoutParams(new ViewGroup.MarginLayoutParams(getThumbnailSize(), getThumbnailSize()));
             thumbnailView.setRounding(dp(2));
+            thumbnailView.setDecodeSize(getThumbnailSize());
             return new PostImageViewHolder(thumbnailView);
         }
 
@@ -767,12 +744,6 @@ public class PostCell
         public void onBindViewHolder(@NonNull PostImageViewHolder holder, int position) {
             PostImageThumbnailView thumbnailView = (PostImageThumbnailView) holder.itemView;
             PostImage image = post.images.get(position);
-            ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams) thumbnailView.getLayoutParams();
-            layoutParams.setMargins(paddingPx,
-                    image == post.image() ? paddingPx : 0,
-                    0,
-                    position + 1 == post.images.size() ? paddingPx : 0
-            );
             thumbnailView.setPostImage(image);
             if (!post.deleted.get() || instance(CacheHandler.class).exists(image.imageUrl)) {
                 thumbnailView.setOnClickListener(v -> callback.onThumbnailClicked(image, thumbnailView));
@@ -782,6 +753,11 @@ public class PostCell
         @Override
         public int getItemCount() {
             return post.images.size();
+        }
+
+        @Override
+        public long getItemId(int position) {
+            return post.images.get(position).imageUrl.hashCode();
         }
 
         private class PostImageViewHolder

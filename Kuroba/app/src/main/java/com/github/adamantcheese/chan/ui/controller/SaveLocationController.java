@@ -24,8 +24,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import androidx.appcompat.app.AlertDialog;
-
 import com.github.adamantcheese.chan.R;
 import com.github.adamantcheese.chan.StartActivity;
 import com.github.adamantcheese.chan.controller.Controller;
@@ -40,6 +38,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.io.File;
 
 import static com.github.adamantcheese.chan.ui.widget.CancellableToast.showToast;
+import static com.github.adamantcheese.chan.ui.widget.DefaultAlertDialog.getDefaultAlertBuilder;
 import static com.github.adamantcheese.chan.utils.AndroidUtils.getString;
 
 public class SaveLocationController
@@ -87,9 +86,9 @@ public class SaveLocationController
             navigationController.popController();
         } else if (v == addButton) {
             final NewFolderLayout dialogView =
-                    (NewFolderLayout) LayoutInflater.from(context).inflate(R.layout.layout_folder_add, null);
+                    (NewFolderLayout) LayoutInflater.from(v.getContext()).inflate(R.layout.layout_folder_add, null);
 
-            new AlertDialog.Builder(context).setView(dialogView)
+            getDefaultAlertBuilder(v.getContext()).setView(dialogView)
                     .setTitle(R.string.save_new_folder)
                     .setPositiveButton(R.string.add, (dialog, which) -> onPositionButtonClick(dialogView, dialog))
                     .setNegativeButton(R.string.cancel, null)

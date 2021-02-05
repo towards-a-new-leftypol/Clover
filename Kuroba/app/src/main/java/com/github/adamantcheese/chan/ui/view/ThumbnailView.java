@@ -43,9 +43,9 @@ import android.view.View;
 import androidx.annotation.NonNull;
 
 import com.github.adamantcheese.chan.R;
-import com.github.adamantcheese.chan.core.repository.BitmapRepository;
 import com.github.adamantcheese.chan.core.net.NetUtils;
 import com.github.adamantcheese.chan.core.net.NetUtilsClasses;
+import com.github.adamantcheese.chan.core.repository.BitmapRepository;
 
 import okhttp3.Call;
 import okhttp3.HttpUrl;
@@ -71,7 +71,6 @@ public abstract class ThumbnailView
     private final RectF outputRect = new RectF();
 
     private final Matrix matrix = new Matrix();
-    private BitmapShader bitmapShader;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
 
     private Drawable foreground;
@@ -207,7 +206,6 @@ public abstract class ThumbnailView
             float y = height / 2f - tmpTextRect.exactCenterY();
             canvas.drawText(errorText, x + getPaddingLeft(), y + getPaddingTop(), textPaint);
         } else {
-            bitmapRect.set(0, 0, bitmap.getWidth(), bitmap.getHeight());
             float scale = Math.max(width / (float) bitmap.getWidth(), height / (float) bitmap.getHeight());
             float scaledX = bitmap.getWidth() * scale;
             float scaledY = bitmap.getHeight() * scale;
@@ -225,8 +223,7 @@ public abstract class ThumbnailView
 
             matrix.setRectToRect(bitmapRect, drawRect, Matrix.ScaleToFit.FILL);
 
-            bitmapShader.setLocalMatrix(matrix);
-            paint.setShader(bitmapShader);
+            paint.getShader().setLocalMatrix(matrix);
 
             canvas.save();
             canvas.clipRect(outputRect);
@@ -247,7 +244,7 @@ public abstract class ThumbnailView
     }
 
     @Override
-    protected boolean verifyDrawable(Drawable who) {
+    protected boolean verifyDrawable(@NonNull Drawable who) {
         return super.verifyDrawable(who) || (who == foreground);
     }
 
@@ -287,8 +284,8 @@ public abstract class ThumbnailView
 
         // set the bitmap and fields for drawing
         this.bitmap = bitmap;
-        bitmapShader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
-        paint.setShader(null);
+        bitmapRect.set(0, 0, bitmap.getWidth(), bitmap.getHeight());
+        paint.setShader(new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP));
 
         // if animated, start, otherwise call end to set the alpha to the end value
         if (animate) {

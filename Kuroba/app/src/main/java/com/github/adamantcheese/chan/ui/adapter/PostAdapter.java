@@ -130,7 +130,8 @@ public class PostAdapter
     }
 
     @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    @NonNull
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         switch (CellType.values()[viewType]) {
             case TYPE_POST:
                 int layout = 0;
@@ -158,12 +159,12 @@ public class PostAdapter
                 statusCell.setError(error);
                 return statusViewHolder;
             default:
-                throw new IllegalStateException();
+                throw new IllegalStateException("Unknown view holder");
         }
     }
 
     @Override
-    public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         int itemViewType = getItemViewType(position);
         switch (CellType.values()[itemViewType]) {
             case TYPE_POST:
@@ -184,8 +185,7 @@ public class PostAdapter
                         getPostViewMode(),
                         isCompact(),
                         searchQuery,
-                        theme,
-                        recyclerView
+                        theme
                 );
 
                 if (itemViewType == TYPE_POST_STUB.ordinal() && postAdapterCallback != null) {

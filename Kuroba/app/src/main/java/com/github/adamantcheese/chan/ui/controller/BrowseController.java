@@ -19,10 +19,9 @@ package com.github.adamantcheese.chan.ui.controller;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
+import android.graphics.drawable.AnimatedVectorDrawable;
 import android.view.View;
 import android.view.animation.AccelerateInterpolator;
-import android.view.animation.Animation;
-import android.view.animation.RotateAnimation;
 
 import com.github.adamantcheese.chan.R;
 import com.github.adamantcheese.chan.core.model.Post;
@@ -50,10 +49,7 @@ import java.util.List;
 
 import javax.inject.Inject;
 
-import static com.github.adamantcheese.chan.ui.widget.CancellableToast.showToast;
 import static com.github.adamantcheese.chan.utils.AndroidUtils.getString;
-import static com.github.adamantcheese.chan.utils.AndroidUtils.openLinkInBrowser;
-import static com.github.adamantcheese.chan.utils.AndroidUtils.shareLink;
 
 public class BrowseController
         extends ThreadController
@@ -121,7 +117,7 @@ public class BrowseController
             menuBuilder.withItem(R.drawable.ic_fluent_list_24_filled, this::handleSorting);
         }
         menuBuilder.withItem(R.drawable.ic_fluent_search_24_filled, this::searchClicked);
-        menuBuilder.withItem(R.drawable.ic_fluent_arrow_clockwise_24_filled, this::reloadClicked);
+        menuBuilder.withItem(R.drawable.animated_refresh_icon, this::reloadClicked);
 
         NavigationItem.MenuOverflowBuilder overflowBuilder = menuBuilder.withOverflow();
 
@@ -129,7 +125,8 @@ public class BrowseController
             overflowBuilder.withSubItem(REPLY_ITEM_ID, R.string.action_reply, () -> threadLayout.openReply(true));
         }
 
-        overflowBuilder.withSubItem(VIEW_MODE_ID,
+        overflowBuilder.withSubItem(
+                VIEW_MODE_ID,
                 ChanSettings.boardViewMode.get() == ChanSettings.PostViewMode.LIST
                         ? R.string.action_switch_catalog
                         : R.string.action_switch_board,
@@ -181,32 +178,7 @@ public class BrowseController
             presenter.requestData();
 
             // Give the rotation menu item view a spin.
-            View refreshView = item.getView();
-            //Disable the ripple effect until the animation ends, but turn it back on so tap/hold ripple works
-            refreshView.setBackgroundResource(0);
-            Animation animation = new RotateAnimation(0,
-                    360,
-                    RotateAnimation.RELATIVE_TO_SELF,
-                    0.5f,
-                    RotateAnimation.RELATIVE_TO_SELF,
-                    0.5f
-            );
-            animation.setDuration(500L);
-            animation.setAnimationListener(new Animation.AnimationListener() {
-                @Override
-                public void onAnimationStart(Animation animation) {
-                }
-
-                @Override
-                public void onAnimationEnd(Animation animation) {
-                    refreshView.setBackgroundResource(R.drawable.ripple_item_background);
-                }
-
-                @Override
-                public void onAnimationRepeat(Animation animation) {
-                }
-            });
-            refreshView.startAnimation(animation);
+            ((AnimatedVectorDrawable) item.getView().getDrawable()).start();
         }
     }
 
@@ -237,24 +209,6 @@ public class BrowseController
             doubleNavigationController.pushController(archiveController);
         } else {
             navigationController.pushController(archiveController);
-        }
-    }
-
-    private void handleShareAndOpenInBrowser(boolean share) {
-        ThreadPresenter presenter = threadLayout.getPresenter();
-        if (presenter.isBound()) {
-            if (presenter.getChanThread() == null) {
-                showToast(context, R.string.cannot_open_in_browser_already_deleted);
-                return;
-            }
-
-            String link = presenter.getLoadable().desktopUrl();
-
-            if (share) {
-                shareLink(link);
-            } else {
-                openLinkInBrowser(context, link);
-            }
         }
     }
 

@@ -25,9 +25,9 @@ import com.github.adamantcheese.chan.core.presenter.ThreadPresenter;
 import com.github.adamantcheese.chan.ui.controller.PostRepliesController;
 import com.github.adamantcheese.chan.ui.view.ThumbnailView;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
+import java.util.Collections;
 import java.util.List;
+import java.util.Stack;
 
 import static com.github.adamantcheese.chan.ui.widget.CancellableToast.showToast;
 
@@ -36,7 +36,7 @@ public class PostPopupHelper {
     private final ThreadPresenter presenter;
     private final PostPopupHelperCallback callback;
 
-    private final Deque<RepliesData> dataDeque = new ArrayDeque<>();
+    private final Stack<RepliesData> dataDeque = new Stack<>();
     private PostRepliesController presentingController;
 
     public PostPopupHelper(Context context, ThreadPresenter presenter, PostPopupHelperCallback callback) {
@@ -51,7 +51,7 @@ public class PostPopupHelper {
             return;
         }
 
-        dataDeque.offer(new RepliesData(forPost, posts));
+        dataDeque.push(new RepliesData(forPost, posts));
 
         if (dataDeque.size() == 1) {
             if (presentingController == null) {
@@ -64,12 +64,12 @@ public class PostPopupHelper {
             throw new IllegalStateException("Thread loadable cannot be null");
         }
 
-        presentingController.displayData(presenter.getLoadable(), dataDeque.peekLast());
+        presentingController.displayData(presenter.getLoadable(), dataDeque.peek());
     }
 
     public void pop() {
         if (!dataDeque.isEmpty()) {
-            dataDeque.pollLast();
+            dataDeque.pop();
         }
 
         if (!dataDeque.isEmpty()) {
@@ -77,7 +77,7 @@ public class PostPopupHelper {
                 throw new IllegalStateException("Thread loadable cannot be null");
             }
 
-            presentingController.displayData(presenter.getLoadable(), dataDeque.pollLast());
+            presentingController.displayData(presenter.getLoadable(), dataDeque.peek());
         } else {
             dismiss();
         }
@@ -93,7 +93,7 @@ public class PostPopupHelper {
     }
 
     public List<Post> getDisplayingPosts() {
-        return presentingController.getPostRepliesData();
+        return !dataDeque.isEmpty() ? dataDeque.peek().posts : Collections.emptyList();
     }
 
     public void scrollTo(int displayPosition) {

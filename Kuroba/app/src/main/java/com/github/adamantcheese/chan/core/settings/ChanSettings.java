@@ -45,9 +45,9 @@ import java.net.InetSocketAddress;
 import java.net.Proxy;
 
 import static android.content.res.Configuration.ORIENTATION_PORTRAIT;
-import static com.github.adamantcheese.chan.core.model.PostImage.Type.GIF;
-import static com.github.adamantcheese.chan.core.model.PostImage.Type.STATIC;
+import static com.github.adamantcheese.chan.utils.AndroidUtils.getAppContext;
 import static com.github.adamantcheese.chan.utils.AndroidUtils.getAppDir;
+import static com.github.adamantcheese.chan.utils.AndroidUtils.getDimen;
 import static com.github.adamantcheese.chan.utils.AndroidUtils.getPreferences;
 import static com.github.adamantcheese.chan.utils.AndroidUtils.getRes;
 import static com.github.adamantcheese.chan.utils.AndroidUtils.getScreenOrientation;
@@ -532,9 +532,12 @@ public class ChanSettings {
                 : ChanSettings.albumGridSpanCountLandscape).get();
     }
 
+    public static int getThumbnailSize() {
+        return getDimen(getAppContext(), R.dimen.cell_post_thumbnail_size) * ChanSettings.thumbnailSize.get() / 100;
+    }
+
     public static boolean shouldUseFullSizeImage(PostImage postImage) {
-        return ChanSettings.autoLoadThreadImages.get() && (postImage.type == STATIC || postImage.type == GIF)
-                && !postImage.isInlined;
+        return ChanSettings.autoLoadThreadImages.get() && !postImage.isInlined;
     }
 
     /**

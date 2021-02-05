@@ -42,6 +42,7 @@ import com.github.adamantcheese.chan.core.model.PostImage;
 import com.github.adamantcheese.chan.core.model.orm.Loadable;
 import com.github.adamantcheese.chan.core.presenter.ReplyPresenter;
 import com.github.adamantcheese.chan.core.repository.BitmapRepository;
+import com.github.adamantcheese.chan.core.repository.BitmapRepository.ResourceBitmap;
 import com.github.adamantcheese.chan.core.settings.ChanSettings;
 import com.github.adamantcheese.chan.core.site.archives.ExternalSiteArchive;
 import com.github.adamantcheese.chan.core.site.sites.chan4.Chan4;
@@ -168,19 +169,16 @@ public class ThreadListLayout
 
         attachToolbarScroll(true);
 
-        if (ChanSettings.moveInputToBottom.get()) {
-            reply.setPadding(0, 0, 0, 0);
-        } else {
-            reply.setPadding(0, toolbarHeight(), 0, 0);
-        }
+        updatePaddings(reply, 0, 0, ChanSettings.moveInputToBottom.get() ? 0 : toolbarHeight(), 0);
         updatePaddings(searchStatus, -1, -1, searchStatus.getPaddingTop() + toolbarHeight(), -1);
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        if (postViewMode != CARD || recyclerView.getLayoutManager() == null) return;
 
-        int gridCountSetting = !isInEditMode() ? ChanSettings.getBoardColumnCount() : 3;
+        int gridCountSetting = isInEditMode() ? 3 : ChanSettings.getBoardColumnCount();
         boolean compactMode;
         if (gridCountSetting > 0) {
             // Set count
@@ -194,18 +192,16 @@ public class ThreadListLayout
             compactMode = false;
         }
 
-        if (postViewMode == CARD) {
-            postAdapter.setCompact(compactMode);
-
-            ((GridLayoutManager) recyclerView.getLayoutManager()).setSpanCount(spanCount);
-        }
+        postAdapter.setCompact(compactMode);
+        ((GridLayoutManager) recyclerView.getLayoutManager()).setSpanCount(spanCount);
     }
 
     public void setPostViewMode(ChanSettings.PostViewMode postViewMode) {
         if (this.postViewMode != postViewMode) {
+            RecyclerView.LayoutManager layoutManager = null;
             switch (postViewMode) {
                 case LIST:
-                    LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getContext()) {
+                    layoutManager = new LinearLayoutManager(getContext()) {
                         @Override
                         public boolean requestChildRectangleOnScreen(
                                 @NonNull RecyclerView parent,
@@ -217,33 +213,26 @@ public class ThreadListLayout
                             return false;
                         }
                     };
-                    setRecyclerViewPadding();
-                    recyclerView.setLayoutManager(linearLayoutManager);
-
                     setBackgroundColor(getAttrColor(getContext(), R.attr.backcolor));
-
                     break;
                 case CARD:
-                    GridLayoutManager gridLayoutManager =
-                            new GridLayoutManager(null, spanCount, GridLayoutManager.VERTICAL, false) {
-                                @Override
-                                public boolean requestChildRectangleOnScreen(
-                                        @NonNull RecyclerView parent,
-                                        @NonNull View child,
-                                        @NonNull Rect rect,
-                                        boolean immediate,
-                                        boolean focusedChildVisible
-                                ) {
-                                    return false;
-                                }
-                            };
-                    setRecyclerViewPadding();
-                    recyclerView.setLayoutManager(gridLayoutManager);
-
+                    layoutManager = new GridLayoutManager(null, spanCount, GridLayoutManager.VERTICAL, false) {
+                        @Override
+                        public boolean requestChildRectangleOnScreen(
+                                @NonNull RecyclerView parent,
+                                @NonNull View child,
+                                @NonNull Rect rect,
+                                boolean immediate,
+                                boolean focusedChildVisible
+                        ) {
+                            return false;
+                        }
+                    };
                     setBackgroundColor(getAttrColor(getContext(), R.attr.backcolor_secondary));
-
                     break;
             }
+            setRecyclerViewPadding();
+            recyclerView.setLayoutManager(layoutManager);
             recyclerView.getRecycledViewPool().clear();
             this.postViewMode = postViewMode;
             postAdapter.setPostViewMode(postViewMode);
@@ -417,6 +406,8 @@ public class ThreadListLayout
                     query
             ));
         }
+
+        setRecyclerViewPadding();
     }
 
     public boolean canChildScrollUp() {
@@ -483,8 +474,8 @@ public class ThreadListLayout
             openSearch(false);
         }
         showingThread = null;
-        noParty();
-        noSanta();
+        recyclerView.removeItemDecoration(PARTY);
+        recyclerView.removeItemDecoration(SANTA);
     }
 
     public List<Post> getDisplayingPosts() {
@@ -493,7 +484,7 @@ public class ThreadListLayout
 
     public ThumbnailView getThumbnail(PostImage postImage) {
         RecyclerView.LayoutManager layoutManager = recyclerView.getLayoutManager();
-
+        if (layoutManager == null) return null;
         for (int i = 0; i < layoutManager.getChildCount(); i++) {
             View view = layoutManager.getChildAt(i);
             if (view instanceof PostCellInterface) {
@@ -686,6 +677,8 @@ public class ThreadListLayout
                 reply.setPadding(0, toolbarHeight(), 0, 0); // (1)
             }
         }
+
+        recyclerView.invalidateItemDecorations();
     }
 
     @Override
@@ -699,8 +692,7 @@ public class ThreadListLayout
     }
 
     public int toolbarHeight() {
-        Toolbar toolbar = threadListLayoutCallback.getToolbar();
-        return toolbar.getToolbarHeight();
+        return threadListLayoutCallback.getToolbar().getToolbarHeight();
     }
 
     private int getTopAdapterPosition() {
@@ -723,56 +715,8 @@ public class ThreadListLayout
         return -1;
     }
 
-    private final RecyclerView.ItemDecoration PARTY = new RecyclerView.ItemDecoration() {
-        @Override
-        public void onDrawOver(@NonNull Canvas c, RecyclerView parent, @NonNull RecyclerView.State state) {
-            for (int i = 0, j = parent.getChildCount(); i < j; i++) {
-                View child = parent.getChildAt(i);
-                if (child instanceof PostCellInterface) {
-                    PostCellInterface postView = (PostCellInterface) child;
-                    Post post = postView.getPost();
-                    if (post.isOP && !post.images.isEmpty()) {
-                        RecyclerView.LayoutParams params = (RecyclerView.LayoutParams) child.getLayoutParams();
-                        int top = child.getTop() + params.topMargin;
-                        int left = child.getLeft() + params.leftMargin;
-                        c.drawBitmap(BitmapRepository.partyHat,
-                                left - parent.getPaddingLeft() - dp(25),
-                                top - dp(80) - parent.getPaddingTop() + toolbarHeight(),
-                                null
-                        );
-                    }
-                }
-            }
-        }
-    };
-
-    private final RecyclerView.ItemDecoration SANTA = new RecyclerView.ItemDecoration() {
-        @Override
-        public void onDrawOver(@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
-            if (ChanSettings.thumbnailSize.get() < 85) return; // below this it doesn't really work too well
-            for (int i = 0, j = parent.getChildCount(); i < j; i++) {
-                View child = parent.getChildAt(i);
-                if (child instanceof PostCellInterface) {
-                    PostCellInterface postView = (PostCellInterface) child;
-                    Post post = postView.getPost();
-                    if (post.isOP && !post.images.isEmpty()) {
-                        RecyclerView.LayoutParams params = (RecyclerView.LayoutParams) child.getLayoutParams();
-                        int top = child.getTop() + params.topMargin;
-                        int left = child.getLeft() + params.leftMargin;
-                        c.drawBitmap(BitmapRepository.santaHat,
-                                left - parent.getPaddingLeft() + dp(10)
-                                        // extra to position on the right hand edge correctly
-                                        + (ChanSettings.thumbnailSize.get() / 100f - 1f) * getDimen(getContext(),
-                                        R.dimen.cell_post_thumbnail_size
-                                ),
-                                top - dp(65) - parent.getPaddingTop() + toolbarHeight(),
-                                null
-                        );
-                    }
-                }
-            }
-        }
-    };
+    private final RecyclerView.ItemDecoration PARTY = new HatItemDecoration(BitmapRepository.partyHat);
+    private final RecyclerView.ItemDecoration SANTA = new HatItemDecoration(BitmapRepository.xmasHat);
 
     private void party() {
         if (showingThread.getLoadable().site instanceof Chan4) {
@@ -784,18 +728,55 @@ public class ThreadListLayout
     }
 
     private void santa() {
-        Calendar calendar = Calendar.getInstance();
-        if (calendar.get(Calendar.MONTH) == Calendar.DECEMBER && calendar.get(Calendar.DAY_OF_MONTH) == 25) {
-            recyclerView.addItemDecoration(SANTA);
+        if (showingThread.getLoadable().site instanceof Chan4) {
+            Calendar calendar = Calendar.getInstance();
+            if (calendar.get(Calendar.MONTH) == Calendar.DECEMBER && calendar.get(Calendar.DAY_OF_MONTH) == 25) {
+                recyclerView.addItemDecoration(SANTA);
+            }
         }
     }
 
-    private void noParty() {
-        recyclerView.removeItemDecoration(PARTY);
-    }
+    /**
+     * Positions a hat bitmap over the top-left corner of post cells
+     */
+    private class HatItemDecoration
+            extends RecyclerView.ItemDecoration {
+        public final ResourceBitmap bitmapWrapper;
 
-    private void noSanta() {
-        recyclerView.removeItemDecoration(SANTA);
+        public HatItemDecoration(ResourceBitmap bitmapWrapper) {
+            this.bitmapWrapper = bitmapWrapper;
+        }
+
+        @Override
+        public void onDrawOver(@NonNull Canvas c, RecyclerView parent, @NonNull RecyclerView.State state) {
+            // precalculations to speed everything up a bit
+            float bitmapXCenter = bitmapWrapper.bitmap.getScaledWidth(c) * bitmapWrapper.centerX;
+            float bitmapYCenter = bitmapWrapper.bitmap.getScaledHeight(c) * bitmapWrapper.centerY;
+            // if in list mode, move it over slightly to align with the thumbnail
+            int thumbnailAdjustment = (postViewMode == LIST ? dp(ChanSettings.fontSize.get() - 7) : 0);
+
+            for (int i = 0, j = parent.getChildCount(); i < j; i++) {
+                View child = parent.getChildAt(i);
+                if (child instanceof PostCellInterface) {
+                    PostCellInterface postView = (PostCellInterface) child;
+                    Post post = postView.getPost();
+                    if (post.isOP && !post.images.isEmpty()) {
+                        MarginLayoutParams postParams = (MarginLayoutParams) child.getLayoutParams();
+                        c.drawBitmap(bitmapWrapper.bitmap,
+                                child.getLeft() + postParams.leftMargin - parent.getPaddingLeft() - bitmapXCenter
+                                        + thumbnailAdjustment,
+
+                                child.getTop() + postParams.topMargin - parent.getPaddingTop() - bitmapYCenter
+                                        + thumbnailAdjustment
+                                        // the recycler's top padding must be accounted for because of layout changes
+                                        // no special cases for reply/search open since those are taken care of in setRecyclerViewPadding
+                                        + parent.getPaddingTop(),
+                                null
+                        );
+                    }
+                }
+            }
+        }
     }
 
     public void onImageOptionsApplied() {

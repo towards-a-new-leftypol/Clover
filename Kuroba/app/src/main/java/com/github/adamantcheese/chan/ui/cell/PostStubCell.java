@@ -25,8 +25,6 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import androidx.recyclerview.widget.RecyclerView;
-
 import com.github.adamantcheese.chan.R;
 import com.github.adamantcheese.chan.core.model.Post;
 import com.github.adamantcheese.chan.core.model.PostImage;
@@ -48,7 +46,6 @@ public class PostStubCell
         implements PostCellInterface {
     private static final int TITLE_MAX_LENGTH = 100;
 
-    private boolean bound;
     private Post post;
     private PostCellInterface.PostCellCallback callback;
 
@@ -119,14 +116,8 @@ public class PostStubCell
             ChanSettings.PostViewMode postViewMode,
             boolean compact,
             String searchQuery,
-            Theme theme,
-            RecyclerView attachedTo
+            Theme theme
     ) {
-        if (this.post != null && bound) {
-            bound = false;
-            this.post = null;
-        }
-
         this.post = post;
         this.callback = callback;
 
@@ -147,8 +138,6 @@ public class PostStubCell
     }
 
     private void bindPost(Post post, ChanSettings.PostViewMode mode) {
-        bound = true;
-
         if (!TextUtils.isEmpty(post.subjectSpan)) {
             title.setText(post.subjectSpan);
         } else {

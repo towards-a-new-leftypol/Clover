@@ -83,19 +83,11 @@ public class AndroidUtils {
 
     @SuppressLint("StaticFieldLeak")
     private static Application application;
-    private static AppCompatActivity activity;
 
-    public static void init(Application application, AppCompatActivity activity) {
+    public static void init(Application application) {
         if (AndroidUtils.application == null) {
             AndroidUtils.application = application;
         }
-        if (AndroidUtils.activity == null) {
-            AndroidUtils.activity = activity;
-        }
-    }
-
-    public static void cleanup() {
-        activity = null;
     }
 
     public static Resources getRes() {
@@ -104,15 +96,6 @@ public class AndroidUtils {
 
     public static Context getAppContext() {
         return application;
-    }
-
-    /**
-     * LIKE SERIOUSLY DON'T USE THIS IF YOU DON'T NEED TO
-     *
-     * @return The activity as a context.
-     */
-    public static Context getActivityContext() {
-        return activity;
     }
 
     public static String getString(int res) {
@@ -344,6 +327,9 @@ public class AndroidUtils {
         }
     }
 
+    /**
+     * Specify -1 to leave that padding the same as before.
+     */
     public static void updatePaddings(View view, int left, int right, int top, int bottom) {
         int newLeft = left;
         if (newLeft < 0) {
@@ -456,7 +442,7 @@ public class AndroidUtils {
                 @Override
                 public boolean onPreDraw() {
                     if (usingViewTreeObserver != view.getViewTreeObserver()) {
-                        Logger.e(
+                        Logger.ve(
                                 TAG,
                                 "view.getViewTreeObserver() is another viewtreeobserver! replacing with the new one"
                         );
@@ -481,7 +467,7 @@ public class AndroidUtils {
                     }
 
                     if (!ret) {
-                        Logger.d(TAG, "waitForLayout requested a re-layout by returning false");
+                        Logger.vd(TAG, "waitForLayout requested a re-layout by returning false");
                     }
 
                     return ret;
