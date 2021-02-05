@@ -26,6 +26,7 @@ import com.github.adamantcheese.chan.core.site.common.CommonSite;
 import com.github.adamantcheese.chan.core.site.common.vichan.VichanApi;
 import com.github.adamantcheese.chan.core.site.common.vichan.VichanCommentParser;
 import com.github.adamantcheese.chan.core.site.common.vichan.VichanEndpoints;
+import com.github.adamantcheese.chan.core.site.sites.chan4.Chan4;
 
 import java.util.List;
 
@@ -150,11 +151,12 @@ public class Leftypol extends CommonSite {
         setParser(new LeftypolCommentParser());
     }
 
-
-
     @NonNull
     @Override
     public ChunkDownloaderSiteProperties getChunkDownloaderSiteProperties() {
-        return new ChunkDownloaderSiteProperties(Integer.MAX_VALUE, true);
+        /**
+         * See {@link Chan4#getChunkDownloaderSiteProperties()} for a detailed explanation
+         */
+        return new ChunkDownloaderSiteProperties(2, true);
     }
 }
