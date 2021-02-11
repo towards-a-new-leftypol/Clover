@@ -16,6 +16,8 @@
  */
 package com.github.adamantcheese.chan.core.di;
 
+import android.webkit.CookieManager;
+
 import com.github.adamantcheese.chan.BuildConfig;
 import com.github.adamantcheese.chan.core.cache.CacheHandler;
 import com.github.adamantcheese.chan.core.cache.FileCacheV2;
@@ -29,13 +31,20 @@ import com.github.k1rakishou.fsaf.FileManager;
 import com.github.k1rakishou.fsaf.file.RawFile;
 
 import org.codejargon.feather.Provides;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
 import javax.inject.Singleton;
 
+import okhttp3.Cookie;
+import okhttp3.CookieJar;
+import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 
@@ -108,7 +117,8 @@ public class NetModule {
             extends OkHttpClient {
 
         public OkHttpClientWithUtils(Builder builder) {
-            super(builder);
+            // Add shared cookies between calls and webviews
+            super(builder.cookieJar(genCookies()));
         }
 
         //This adds a proxy to the base client
@@ -119,6 +129,62 @@ public class NetModule {
         // This adds an HTTP redirect follower to the base client
         public OkHttpClient getHttpRedirectClient() {
             return newBuilder().addInterceptor(new HttpEquivRefreshInterceptor()).build();
+        }
+
+        @NotNull
+        @Override
+        public Builder newBuilder() {
+            return super.newBuilder().cookieJar(genCookies());
+        }
+
+        private static CookieJar genCookies() {
+            return new CookieJar(){
+                @Override
+                public void saveFromResponse(@NotNull HttpUrl httpUrl, @NotNull List<Cookie> list) {
+                    String str = "";
+
+                    Iterator<Cookie> it = list.iterator();
+
+                    if (it.hasNext()) {
+                        Cookie c = it.next();
+                        str = c.name() + "=" + c.value();
+                    }
+
+                    while (it.hasNext()) {
+                        Cookie c = it.next();
+                        str += "; " + c.name() + "=" + c.value();
+                    }
+
+                    if (!str.equals("")) {
+                        CookieManager.getInstance().setCookie(httpUrl.resolve("/").toString(), str);
+                    }
+                }
+
+                @NotNull
+                @Override
+                public List<Cookie> loadForRequest(@NotNull HttpUrl httpUrl) {
+                    String cookies = CookieManager.getInstance().getCookie(httpUrl.toString());
+                    if (cookies == null) {
+                        cookies = "";
+                    }
+
+                    return parseCookies(httpUrl.resolve("/"), cookies);
+                }
+            };
+        }
+
+        private static List<Cookie> parseCookies(HttpUrl url, String allCookies) {
+            ArrayList<Cookie> cookies = new ArrayList<>();
+
+            if (allCookies.length() <= 0) {
+                return cookies;
+            }
+
+            for (String cookie : allCookies.split(";")) {
+                cookies.add(Cookie.parse(url, cookie.trim()));
+            }
+
+            return cookies;
         }
     }
 }

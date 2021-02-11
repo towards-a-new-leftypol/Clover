@@ -44,6 +44,7 @@ import com.github.adamantcheese.chan.ui.toolbar.ToolbarMenuItem;
 import com.github.adamantcheese.chan.ui.toolbar.ToolbarMenuSubItem;
 import com.github.adamantcheese.chan.ui.view.FloatingMenu;
 import com.github.adamantcheese.chan.utils.AndroidUtils;
+import com.github.adamantcheese.chan.utils.Logger;
 import com.github.k1rakishou.fsaf.FileManager;
 import com.skydoves.balloon.ArrowConstraints;
 import com.skydoves.balloon.ArrowOrientation;
@@ -224,6 +225,11 @@ public class ViewThreadController
     @Subscribe
     public void onEvent(PinMessages.PinsChangedMessage message) {
         setPinIconState(true);
+    }
+
+    @Override
+    public void showChallenge(Loadable loadable) {
+        // TODO: Implement
     }
 
     @Override
