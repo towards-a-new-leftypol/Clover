@@ -116,10 +116,61 @@ public class NetModule {
     public static class OkHttpClientWithUtils
             extends OkHttpClient {
 
-        private static CookieJar cookies = null;
-
         public OkHttpClientWithUtils(Builder builder) {
-            super(builder);
+            // Add shared cookies between calls and webviews
+            super(builder.cookieJar(genCookies()));
+        }
+
+        //This adds a proxy to the base client
+        public OkHttpClient getProxiedClient() {
+            return newBuilder().proxy(ChanSettings.getProxy()).build();
+        }
+
+        // This adds an HTTP redirect follower to the base client
+        public OkHttpClient getHttpRedirectClient() {
+            return newBuilder().addInterceptor(new HttpEquivRefreshInterceptor()).build();
+        }
+
+        @NotNull
+        @Override
+        public Builder newBuilder() {
+            return super.newBuilder().cookieJar(genCookies());
+        }
+
+        private static CookieJar genCookies() {
+            return new CookieJar(){
+                @Override
+                public void saveFromResponse(@NotNull HttpUrl httpUrl, @NotNull List<Cookie> list) {
+                    String str = "";
+
+                    Iterator<Cookie> it = list.iterator();
+
+                    if (it.hasNext()) {
+                        Cookie c = it.next();
+                        str = c.name() + "=" + c.value();
+                    }
+
+                    while (it.hasNext()) {
+                        Cookie c = it.next();
+                        str += "; " + c.name() + "=" + c.value();
+                    }
+
+                    if (!str.equals("")) {
+                        CookieManager.getInstance().setCookie(httpUrl.resolve("/").toString(), str);
+                    }
+                }
+
+                @NotNull
+                @Override
+                public List<Cookie> loadForRequest(@NotNull HttpUrl httpUrl) {
+                    String cookies = CookieManager.getInstance().getCookie(httpUrl.toString());
+                    if (cookies == null) {
+                        cookies = "";
+                    }
+
+                    return parseCookies(httpUrl.resolve("/"), cookies);
+                }
+            };
         }
 
         private static List<Cookie> parseCookies(HttpUrl url, String allCookies) {
@@ -134,59 +185,6 @@ public class NetModule {
             }
 
             return cookies;
-        }
-
-        @NotNull
-        @Override
-        public Builder newBuilder() {
-            if (cookies == null) {
-                cookies = new CookieJar(){
-                    @Override
-                    public void saveFromResponse(@NotNull HttpUrl httpUrl, @NotNull List<Cookie> list) {
-                        String str = "";
-
-                        Iterator<Cookie> it = list.iterator();
-
-                        if (it.hasNext()) {
-                            Cookie c = it.next();
-                            str = c.name() + "=" + c.value();
-                        }
-
-                        while (it.hasNext()) {
-                            Cookie c = it.next();
-                            str += "; " + c.name() + "=" + c.value();
-                        }
-
-                        if (!str.equals("")) {
-                            CookieManager.getInstance().setCookie(httpUrl.resolve("/").toString(), str);
-                        }
-                    }
-
-                    @NotNull
-                    @Override
-                    public List<Cookie> loadForRequest(@NotNull HttpUrl httpUrl) {
-                        String cookies = CookieManager.getInstance().getCookie(httpUrl.toString());
-                        if (cookies == null) {
-                            cookies = "";
-                        }
-
-                        return parseCookies(httpUrl.resolve("/"), cookies);
-                    }
-                };
-            }
-
-            return super.newBuilder()
-                    .cookieJar(cookies);
-        }
-
-        //This adds a proxy to the base client
-        public OkHttpClient getProxiedClient() {
-            return newBuilder().proxy(ChanSettings.getProxy()).build();
-        }
-
-        // This adds an HTTP redirect follower to the base client
-        public OkHttpClient getHttpRedirectClient() {
-            return newBuilder().addInterceptor(new HttpEquivRefreshInterceptor()).build();
         }
     }
 }
