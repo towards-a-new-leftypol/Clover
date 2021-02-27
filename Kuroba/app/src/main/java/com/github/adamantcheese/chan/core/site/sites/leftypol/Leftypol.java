@@ -150,13 +150,4 @@ public class Leftypol extends CommonSite {
         setApi(new LeftypolApi(this));
         setParser(new LeftypolCommentParser());
     }
-
-    @NonNull
-    @Override
-    public ChunkDownloaderSiteProperties getChunkDownloaderSiteProperties() {
-        /**
-         * See {@link Chan4#getChunkDownloaderSiteProperties()} for a detailed explanation
-         */
-        return new ChunkDownloaderSiteProperties(2, true);
-    }
 }
