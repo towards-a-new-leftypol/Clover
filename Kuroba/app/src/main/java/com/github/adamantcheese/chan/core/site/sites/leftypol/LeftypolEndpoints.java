@@ -19,6 +19,7 @@ public class LeftypolEndpoints extends VichanEndpoints {
     @Override
     public HttpUrl thumbnailUrl(Post.Builder post, boolean spoiler, Map<String, String> arg) {
         String ext = arg.get("ext");
+        String tim = arg.get("tim");
 
         if (spoiler) {
             return root.builder()
@@ -52,7 +53,7 @@ public class LeftypolEndpoints extends VichanEndpoints {
         return root.builder()
                 .s(post.board.code)
                 .s("thumb")
-                .s(arg.get("tim") + finalExt)
+                .s(tim + finalExt)
                 .url();
     }
 
