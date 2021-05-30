@@ -2,6 +2,7 @@ package com.github.adamantcheese.chan.core.site.sites.leftypol;
 
 import com.github.adamantcheese.chan.core.model.orm.Loadable;
 import com.github.adamantcheese.chan.core.net.NetUtils;
+import com.github.adamantcheese.chan.core.site.SiteAuthentication;
 import com.github.adamantcheese.chan.core.site.common.CommonSite;
 import com.github.adamantcheese.chan.core.site.common.MultipartHttpCall;
 import com.github.adamantcheese.chan.core.site.common.vichan.VichanActions;
@@ -26,6 +27,9 @@ public class LeftypolActions extends VichanActions {
         super.setupPost(loadable, call);
 
         call.parameter("user_flag", loadable.draft.flag);
+        if (loadable.draft.captchaResponse != "" && loadable.draft.captchaResponse != null) {
+            call.parameter("captcha", loadable.draft.captchaResponse);
+        }
     }
 
     @Override
@@ -53,6 +57,16 @@ public class LeftypolActions extends VichanActions {
             setupPost(loadableWithDraft, call);
             makePostCall(call, replyResponse, postListener);
         }
+    }
+
+    @Override
+    public boolean postRequiresAuthentication() {
+        return true;
+    }
+
+    @Override
+    public SiteAuthentication postAuthenticate() {
+        return SiteAuthentication.fromSecurimage(this.rootUrl + "captcha.php");
     }
 
     private void makePostCall(HttpCall call, ReplyResponse replyResponse, PostListener postListener) {
