@@ -21,10 +21,12 @@ import com.github.adamantcheese.chan.core.site.parser.ChanReader;
 import com.github.adamantcheese.chan.core.site.parser.ChanReaderProcessingQueue;
 import com.github.adamantcheese.chan.core.site.parser.CommentParser;
 import com.github.adamantcheese.chan.core.site.parser.PostParser;
+import com.github.adamantcheese.chan.utils.CompletableFuture;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 
 import okhttp3.HttpUrl;
 import okhttp3.Request;
@@ -224,8 +226,8 @@ public class DummySite
             public void post(Loadable loadableWithDraft, PostListener postListener) {}
 
             @Override
-            public boolean postRequiresAuthentication() {
-                return false;
+            public Future<Boolean> postRequiresAuthentication() {
+                return new CompletableFuture<>(false);
             }
 
             @Override

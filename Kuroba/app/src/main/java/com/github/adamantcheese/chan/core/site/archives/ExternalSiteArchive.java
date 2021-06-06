@@ -23,11 +23,13 @@ import com.github.adamantcheese.chan.core.site.parser.ChanReaderProcessingQueue;
 import com.github.adamantcheese.chan.core.site.parser.CommentParser.ResolveLink;
 import com.github.adamantcheese.chan.core.site.parser.CommentParser.ThreadLink;
 import com.github.adamantcheese.chan.core.site.parser.PostParser;
+import com.github.adamantcheese.chan.utils.CompletableFuture;
 import com.github.adamantcheese.chan.utils.JavaUtils.NoDeleteArrayList;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 
 import kotlin.random.Random;
 import okhttp3.HttpUrl;
@@ -47,7 +49,7 @@ public abstract class ExternalSiteArchive
         this.name = name;
         this.boardCodes = new NoDeleteArrayList<>(boardCodes);
         this.searchEnabled = searchEnabled;
-        
+
         id = Random.Default.nextInt(Integer.MIN_VALUE / 2, -1);
     }
 
@@ -136,7 +138,7 @@ public abstract class ExternalSiteArchive
             public void post(Loadable loadableWithDraft, PostListener postListener) {}
 
             @Override
-            public boolean postRequiresAuthentication() { return false; }
+            public Future<Boolean> postRequiresAuthentication() { return new CompletableFuture(false); }
 
             @Override
             public SiteAuthentication postAuthenticate() {

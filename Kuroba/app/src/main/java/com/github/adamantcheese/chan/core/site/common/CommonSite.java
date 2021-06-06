@@ -45,9 +45,11 @@ import com.github.adamantcheese.chan.core.site.parser.CommentParser;
 import com.github.adamantcheese.chan.core.site.parser.PostParser;
 import com.github.adamantcheese.chan.utils.BackgroundUtils;
 import com.github.adamantcheese.chan.core.net.NetUtils;
+import com.github.adamantcheese.chan.utils.CompletableFuture;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -478,8 +480,8 @@ public abstract class CommonSite
         }
 
         @Override
-        public boolean postRequiresAuthentication() {
-            return false;
+        public Future<Boolean> postRequiresAuthentication() {
+            return new CompletableFuture(false);
         }
 
         @Override
