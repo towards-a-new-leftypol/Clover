@@ -69,6 +69,7 @@ import com.github.adamantcheese.chan.ui.captcha.CaptchaHolder;
 import com.github.adamantcheese.chan.ui.captcha.CaptchaLayout;
 import com.github.adamantcheese.chan.ui.captcha.GenericWebViewAuthenticationLayout;
 import com.github.adamantcheese.chan.ui.captcha.LegacyCaptchaLayout;
+import com.github.adamantcheese.chan.ui.captcha.image.SecurimageCaptcha;
 import com.github.adamantcheese.chan.ui.captcha.v1.CaptchaNojsLayoutV1;
 import com.github.adamantcheese.chan.ui.captcha.v2.CaptchaNoJsLayoutV2;
 import com.github.adamantcheese.chan.ui.helper.ImagePickDelegate;
@@ -404,6 +405,7 @@ public class ReplyLayout
             boolean autoReply
     ) {
         if (authenticationLayout == null) {
+            ImageView resetButton = captchaContainer.findViewById(R.id.reset);
             switch (authentication.type) {
                 case CAPTCHA1:
                     authenticationLayout = (LegacyCaptchaLayout) LayoutInflater.from(getContext())
@@ -421,7 +423,6 @@ public class ReplyLayout
                         authenticationLayout = new CaptchaNojsLayoutV1(getContext());
                     }
 
-                    ImageView resetButton = captchaContainer.findViewById(R.id.reset);
                     if (resetButton != null) {
                         if (useV2NoJsCaptcha) {
                             // we don't need the default reset button because we have our own
@@ -432,6 +433,10 @@ public class ReplyLayout
                         }
                     }
 
+                    break;
+                case SECURIMAGE:
+                    resetButton.setVisibility(GONE);
+                    authenticationLayout = new SecurimageCaptcha(getContext());
                     break;
                 case GENERIC_WEBVIEW:
                     GenericWebViewAuthenticationLayout view = new GenericWebViewAuthenticationLayout(getContext());

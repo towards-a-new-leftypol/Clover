@@ -19,6 +19,7 @@ package com.github.adamantcheese.chan.core.site;
 import static com.github.adamantcheese.chan.core.site.SiteAuthentication.Type.CAPTCHA1;
 import static com.github.adamantcheese.chan.core.site.SiteAuthentication.Type.CAPTCHA2;
 import static com.github.adamantcheese.chan.core.site.SiteAuthentication.Type.CAPTCHA2_NOJS;
+import static com.github.adamantcheese.chan.core.site.SiteAuthentication.Type.SECURIMAGE;
 import static com.github.adamantcheese.chan.core.site.SiteAuthentication.Type.GENERIC_WEBVIEW;
 import static com.github.adamantcheese.chan.core.site.SiteAuthentication.Type.NONE;
 
@@ -29,6 +30,7 @@ public class SiteAuthentication {
         CAPTCHA1,
         CAPTCHA2,
         CAPTCHA2_NOJS,
+        SECURIMAGE, // Simple PHP captcha displaying a image to text challenge
         GENERIC_WEBVIEW
     }
 
@@ -54,6 +56,17 @@ public class SiteAuthentication {
         SiteAuthentication a = new SiteAuthentication(CAPTCHA2_NOJS);
         a.siteKey = siteKey;
         a.baseUrl = baseUrl;
+        return a;
+    }
+
+    /**
+     * Create a new authentication using Securimage's captcha
+     * @param captchaUrl The path to the securimage script. Usually something like "https://website.com/captcha.php"
+     * @return New authentication using Securimage's captcha
+     */
+    public static SiteAuthentication fromSecurimage(String captchaUrl) {
+        SiteAuthentication a = new SiteAuthentication(SECURIMAGE);
+        a.baseUrl = captchaUrl;
         return a;
     }
 

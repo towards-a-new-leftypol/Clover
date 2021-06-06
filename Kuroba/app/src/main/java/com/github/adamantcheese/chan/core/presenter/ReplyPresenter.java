@@ -59,6 +59,8 @@ import com.github.adamantcheese.chan.utils.Logger;
 import com.github.adamantcheese.chan.utils.StringUtils;
 
 import java.io.File;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -218,11 +220,41 @@ public class ReplyPresenter
             return;
         }
 
-        submitOrAuthenticate(authenticateOnly);
+        checkForAuth(authenticateOnly);
     }
 
-    private void submitOrAuthenticate(boolean authenticateOnly) {
-        if (loadable.site.actions().postRequiresAuthentication()) {
+    private void checkForAuth(boolean authenticateOnly) {
+        final Future<Boolean> res = loadable.site.actions().postRequiresAuthentication();
+        if (res.isDone()) {
+            try {
+                this.submitOrAuthenticate(authenticateOnly, res.get());
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        } else {
+            switchPage(Page.LOADING);
+            BackgroundUtils.runOnBackgroundThread(() -> {
+                Logger.d(this, "Background!");
+                try {
+                    final boolean auth = res.get();
+                    Logger.d(this, "Background: " + auth);
+                    BackgroundUtils.runOnMainThread(() -> {
+                        Logger.d(this,  "Main: " + auth);
+                        this.submitOrAuthenticate(authenticateOnly, auth);
+                    });
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            });
+        }
+    }
+
+    private void submitOrAuthenticate(boolean authenticateOnly, boolean requiresAuthentication) {
+        if (requiresAuthentication) {
             switchPage(Page.AUTHENTICATION, true, !authenticateOnly);
         } else {
             makeSubmitCall();

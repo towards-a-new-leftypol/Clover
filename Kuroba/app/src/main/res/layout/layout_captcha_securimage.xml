@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/layout_captcha_securimage_top_level"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="?backcolor"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?backcolor"
+        android:gravity="center"
+        android:maxLines="2"
+        android:padding="4dp"
+        android:textSize="18sp"
+        android:text="@string/captcha_securimage_title" />
+
+    <ImageView
+        android:id="@+id/layout_captcha_securimage_image"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scaleType="fitCenter"
+        android:adjustViewBounds="true"
+        tools:src="@drawable/partyhat"/>
+
+    <EditText
+        android:id="@+id/layout_captcha_securimage_input"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="text"
+        android:maxLines="1"
+        android:hint="@string/reply_captcha_text"
+        android:layout_margin="8dp"
+        android:textSize="16sp" />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:background="?backcolor"
+        tools:layout_editor_absoluteY="40dp">
+
+        <Button
+            android:id="@+id/layout_captcha_securimage_reload_button"
+            style="@style/Widget.AppCompat.Button.Borderless"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:text="@string/action_reload"
+            app:layout_constraintBottom_toBottomOf="@+id/layout_captcha_securimage_verify_button"
+            app:layout_constraintEnd_toStartOf="@+id/layout_captcha_securimage_verify_button"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/layout_captcha_securimage_verify_button" />
+
+        <Button
+            android:id="@+id/layout_captcha_securimage_verify_button"
+            style="@style/Widget.AppCompat.Button.Borderless"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:text="@string/captcha_securimage_verify"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/layout_captcha_securimage_reload_button"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</LinearLayout>

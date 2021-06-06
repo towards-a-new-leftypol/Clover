@@ -17,6 +17,7 @@ import com.github.adamantcheese.chan.core.site.common.vichan.VichanEndpoints;
 import com.github.adamantcheese.chan.core.site.http.DeleteRequest;
 import com.github.adamantcheese.chan.core.site.http.HttpCall.HttpCallback;
 import com.github.adamantcheese.chan.core.site.parser.CommentParser;
+import com.github.adamantcheese.chan.utils.CompletableFuture;
 import com.github.adamantcheese.chan.utils.Logger;
 import com.github.adamantcheese.chan.core.net.NetUtils;
 import com.github.adamantcheese.chan.core.net.NetUtilsClasses.ResponseResult;
@@ -26,6 +27,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 
 import okhttp3.HttpUrl;
 
@@ -170,8 +172,8 @@ public class Dvach
             }
 
             @Override
-            public boolean postRequiresAuthentication() {
-                return !isLoggedIn();
+            public Future<Boolean> postRequiresAuthentication() {
+                return new CompletableFuture<>(!isLoggedIn());
             }
 
             @Override

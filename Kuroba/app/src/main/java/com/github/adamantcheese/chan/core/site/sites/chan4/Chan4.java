@@ -50,6 +50,7 @@ import com.github.adamantcheese.chan.core.site.http.LoginRequest;
 import com.github.adamantcheese.chan.core.site.http.LoginResponse;
 import com.github.adamantcheese.chan.core.site.parser.ChanReader;
 import com.github.adamantcheese.chan.utils.BackgroundUtils;
+import com.github.adamantcheese.chan.utils.CompletableFuture;
 import com.github.adamantcheese.chan.utils.Logger;
 import com.github.adamantcheese.chan.core.net.NetUtils;
 import com.github.adamantcheese.chan.core.net.NetUtilsClasses.HTMLProcessor;
@@ -64,6 +65,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.Future;
 
 import kotlin.random.Random;
 import okhttp3.HttpUrl;
@@ -377,8 +379,8 @@ public class Chan4
         }
 
         @Override
-        public boolean postRequiresAuthentication() {
-            return !isLoggedIn();
+        public Future<Boolean> postRequiresAuthentication() {
+            return new CompletableFuture<>(!isLoggedIn());
         }
 
         @Override

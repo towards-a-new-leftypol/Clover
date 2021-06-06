@@ -27,6 +27,8 @@ import com.github.adamantcheese.chan.core.site.http.LoginRequest;
 import com.github.adamantcheese.chan.core.site.http.LoginResponse;
 import com.github.adamantcheese.chan.core.site.http.ReplyResponse;
 
+import java.util.concurrent.Future;
+
 public interface SiteActions {
     void boards(BoardsListener boardsListener);
 
@@ -50,7 +52,7 @@ public interface SiteActions {
         void onPostError(Exception exception);
     }
 
-    boolean postRequiresAuthentication();
+    Future<Boolean> postRequiresAuthentication();
 
     /**
      * If {@link ReplyResponse#requireAuthentication} was {@code true}, or if
