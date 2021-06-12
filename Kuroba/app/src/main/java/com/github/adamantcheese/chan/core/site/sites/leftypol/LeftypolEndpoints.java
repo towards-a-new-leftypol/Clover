@@ -69,8 +69,9 @@ public class LeftypolEndpoints extends VichanEndpoints {
 
     @Override
     public HttpUrl report(Post post) {
-        return root.url
-                .addPathSegment("report.php")
+        return root.builder()
+                .s("report.php")
+                .url
                 .addQueryParameter("post", "delete_" + post.no)
                 .addQueryParameter("board", post.boardCode)
                 .build();
