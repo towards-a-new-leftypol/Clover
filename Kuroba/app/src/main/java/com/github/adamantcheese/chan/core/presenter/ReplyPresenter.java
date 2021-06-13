@@ -53,12 +53,15 @@ import com.github.adamantcheese.chan.ui.captcha.AuthenticationLayoutCallback;
 import com.github.adamantcheese.chan.ui.captcha.AuthenticationLayoutInterface;
 import com.github.adamantcheese.chan.ui.helper.ImagePickDelegate;
 import com.github.adamantcheese.chan.ui.helper.PostHelper;
+import com.github.adamantcheese.chan.ui.layout.ReplyLayout;
 import com.github.adamantcheese.chan.utils.BackgroundUtils;
 import com.github.adamantcheese.chan.utils.BitmapUtils;
 import com.github.adamantcheese.chan.utils.Logger;
 import com.github.adamantcheese.chan.utils.StringUtils;
 
 import java.io.File;
+import java.util.List;
+import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -183,11 +186,12 @@ public class ReplyPresenter
         if (is4chan && (loadable.boardCode.equals("jp") || loadable.boardCode.equals("vip"))) {
             callback.openCommentSJISButton(moreOpen);
         }
-        if (is4chan && loadable.boardCode.equals("pol")) {
-            callback.openFlag(moreOpen);
-        }
-        if (isLeftypol) {
-            callback.openFlag(moreOpen);
+        if (isLeftypol || (is4chan && loadable.boardCode.equals("pol"))) {
+            if (loadable.site.siteFeature(Site.SiteFeature.FLAG_LIST)) {
+                callback.openFlagPicker(moreOpen, loadable.site.actions().flags(loadable.board));
+            } else {
+                callback.openFlag(moreOpen);
+            }
         }
     }
 
@@ -646,6 +650,8 @@ public class ReplyPresenter
         void openSubject(boolean open);
 
         void openFlag(boolean open);
+
+        void openFlagPicker(boolean open, Future<List<ReplyLayout.Flag>> flagList);
 
         void openCommentQuoteButton(boolean open);
 

@@ -23,11 +23,13 @@ import com.github.adamantcheese.chan.core.site.parser.ChanReaderProcessingQueue;
 import com.github.adamantcheese.chan.core.site.parser.CommentParser.ResolveLink;
 import com.github.adamantcheese.chan.core.site.parser.CommentParser.ThreadLink;
 import com.github.adamantcheese.chan.core.site.parser.PostParser;
+import com.github.adamantcheese.chan.ui.layout.ReplyLayout;
 import com.github.adamantcheese.chan.utils.JavaUtils.NoDeleteArrayList;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 
 import kotlin.random.Random;
 import okhttp3.HttpUrl;
@@ -160,6 +162,11 @@ public abstract class ExternalSiteArchive
 
             @Override
             public LoginRequest getLoginDetails() { return new LoginRequest("", ""); }
+
+            @Override
+            public Future<List<ReplyLayout.Flag>> flags(Board b) {
+                return null;
+            }
         };
     }
 

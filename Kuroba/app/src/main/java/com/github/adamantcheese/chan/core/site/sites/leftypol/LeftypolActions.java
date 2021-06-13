@@ -1,5 +1,6 @@
 package com.github.adamantcheese.chan.core.site.sites.leftypol;
 
+import com.github.adamantcheese.chan.core.model.orm.Board;
 import com.github.adamantcheese.chan.core.model.orm.Loadable;
 import com.github.adamantcheese.chan.core.net.NetUtils;
 import com.github.adamantcheese.chan.core.site.SiteAuthentication;
@@ -8,7 +9,14 @@ import com.github.adamantcheese.chan.core.site.common.MultipartHttpCall;
 import com.github.adamantcheese.chan.core.site.common.vichan.VichanActions;
 import com.github.adamantcheese.chan.core.site.http.HttpCall;
 import com.github.adamantcheese.chan.core.site.http.ReplyResponse;
+import com.github.adamantcheese.chan.ui.layout.ReplyLayout;
 import com.github.adamantcheese.chan.utils.BackgroundUtils;
+import com.github.adamantcheese.chan.utils.CompletableFuture;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.Future;
 
 import okhttp3.HttpUrl;
 import okhttp3.Response;
@@ -67,6 +75,15 @@ public class LeftypolActions extends VichanActions {
     @Override
     public SiteAuthentication postAuthenticate() {
         return SiteAuthentication.fromSecurimage(this.rootUrl + "captcha.php");
+    }
+
+    @Override
+    public Future<List<ReplyLayout.Flag>> flags(Board b) {
+        return new CompletableFuture<>(Arrays.asList(
+                new ReplyLayout.Flag("Chavismo", "chavismo"),
+                new ReplyLayout.Flag("Gentoo", "gentoo"),
+                new ReplyLayout.Flag("Marx", "marx")
+        ));
     }
 
     private void makePostCall(HttpCall call, ReplyResponse replyResponse, PostListener postListener) {

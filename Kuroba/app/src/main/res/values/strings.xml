@@ -614,6 +614,8 @@ Don't have a 4chan Pass?<br>
     <string name="captcha_securimage_title">Solve the following captcha:</string>
     <string name="captcha_securimage_verify">Verify</string>
 
+    <string name="flag_selector_select">Select</string>
+
     <string name="image_url_copied_to_clipboard">Image URL copied to clipboard</string>
     <string name="delete_site_dialog_title">Delete site?</string>
     <string name="delete_site_dialog_message">Are you sure you want to delete "%1$s"? This action will delete the site and everything that is associated with it. The app will be restarted. Do you wish to proceed?</string>

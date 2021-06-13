@@ -65,7 +65,12 @@ public interface Site {
         /**
          * This site reports image hashes.
          */
-        IMAGE_FILE_HASH
+        IMAGE_FILE_HASH,
+
+        /**
+         * This site has a list of flags we can pick from
+         */
+        FLAG_LIST,
     }
 
     /**

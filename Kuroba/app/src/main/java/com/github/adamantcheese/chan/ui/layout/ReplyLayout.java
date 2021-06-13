@@ -21,7 +21,9 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.os.Build;
@@ -89,6 +91,9 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Future;
 
 import javax.inject.Inject;
 
@@ -126,6 +131,7 @@ public class ReplyLayout
     private View replyInputLayout;
     private TextView message;
     private EditText name;
+    private Button flagPicker;
     private EditText subject;
     private EditText flag;
     private EditText options;
@@ -153,6 +159,11 @@ public class ReplyLayout
 
     private View topDivider;
     private View botDivider;
+
+    // Flag picker fields
+    private AlertDialog flagPickerDialog;
+    private Flag pickedFlag;
+    Future<List<Flag>> flagList;
 
     // Captcha views:
     private FrameLayout captchaContainer;
@@ -210,6 +221,7 @@ public class ReplyLayout
         name = replyInputLayout.findViewById(R.id.name);
         subject = replyInputLayout.findViewById(R.id.subject);
         flag = replyInputLayout.findViewById(R.id.flag);
+        flagPicker = replyInputLayout.findViewById(R.id.flag_picker);
         options = replyInputLayout.findViewById(R.id.options);
         fileName = replyInputLayout.findViewById(R.id.file_name);
         filenameNew = replyInputLayout.findViewById(R.id.filename_new);
@@ -272,6 +284,48 @@ public class ReplyLayout
             } else {
                 showToast(getContext(), R.string.file_cannot_be_reencoded, Toast.LENGTH_LONG);
             }
+        });
+
+        flagPicker.setOnClickListener(v -> {
+            final SelectLayout<Flag> selectLayout =
+                    (SelectLayout<Flag>) LayoutInflater.from(getContext()).inflate(R.layout.layout_select, null);
+            final AlertDialog.Builder builder = new AlertDialog.Builder(getContext())
+                    .setPositiveButton(R.string.flag_selector_select, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            for (SelectLayout.SelectItem<Flag> flag : selectLayout.getItems()) {
+                                if (flag.checked) {
+                                    pickedFlag = flag.item;
+                                    flagPicker.setText(flag.item.name);
+                                    return;
+                                }
+                            }
+                        }
+                    })
+                    .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            pickedFlag = null;
+                        }
+                    });
+
+            if (flagList.isDone()) {
+                try {
+                    List<SelectLayout.SelectItem<Flag>> flags = new ArrayList<>();
+                    for (Flag flag : flagList.get()) {
+                        flags.add(new SelectLayout.SelectItem<>(flag, (long) flag.code.hashCode(), flag.name, null, flag.name, false));
+                    }
+                    selectLayout.setItems(flags);
+                } catch (Exception e) {
+                    Logger.e(this, e.getMessage());
+                }
+                builder.setView(selectLayout);
+            } else {
+                // TODO: Set view as loading
+            }
+
+            pickedFlag = null;
+            flagPickerDialog = builder.show();
         });
 
         if (!isInEditMode()) {
@@ -536,6 +590,10 @@ public class ReplyLayout
         name.setText(draft.name);
         subject.setText(draft.subject);
         flag.setText(draft.flag);
+        if (!draft.flag.equals("")) {
+            flagPicker.setText(draft.flag);
+            pickedFlag = new Flag(draft.flag, draft.flag);
+        }
         options.setText(draft.options);
         fileName.setText(draft.fileName);
         comment.setText(draft.comment);
@@ -548,7 +606,6 @@ public class ReplyLayout
     public void loadViewsIntoDraft(Reply draft) {
         draft.name = name.getText().toString();
         draft.subject = subject.getText().toString();
-        draft.flag = flag.getText().toString();
         draft.options = options.getText().toString();
         draft.comment = comment.getText().toString();
         draft.fileName = fileName.getText().toString();
@@ -557,6 +614,12 @@ public class ReplyLayout
         if (ChanSettings.enableEmoji.get()) {
             draft.name = StringUtils.parseEmojiToAscii(draft.name);
             draft.comment = StringUtils.parseEmojiToAscii(draft.comment);
+        }
+
+        if (pickedFlag != null) {
+            draft.flag = pickedFlag.code;
+        } else {
+            draft.flag = flag.getText().toString();
         }
     }
 
@@ -730,6 +793,11 @@ public class ReplyLayout
         flag.setVisibility(open ? VISIBLE : GONE);
     }
 
+    @Override
+    public void openFlagPicker(boolean open, Future<List<Flag>> flagList) {
+        flagPicker.setVisibility(open ? VISIBLE : GONE);
+        this.flagList = flagList;
+    }
     @Override
     public void openCommentQuoteButton(boolean open) {
         commentQuoteButton.setVisibility(open ? View.VISIBLE : View.GONE);
@@ -1091,5 +1159,15 @@ public class ReplyLayout
         void updatePadding();
 
         boolean isViewingCatalog();
+    }
+
+    public static class Flag {
+        public final String name;
+        public final String code;
+
+        public Flag(String name, String code) {
+            this.name = name;
+            this.code = code;
+        }
     }
 }
