@@ -97,6 +97,8 @@ import java.util.concurrent.Future;
 
 import javax.inject.Inject;
 
+import okhttp3.HttpUrl;
+
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 import static com.github.adamantcheese.chan.Chan.inject;
@@ -314,7 +316,7 @@ public class ReplyLayout
                 try {
                     List<SelectLayout.SelectItem<Flag>> flags = new ArrayList<>();
                     for (Flag flag : flagList.get()) {
-                        flags.add(new SelectLayout.SelectItem<>(flag, (long) flag.code.hashCode(), flag.name, null, flag.name, false));
+                        flags.add(new SelectLayout.SelectItem<>(flag, flag.code.hashCode(), flag.name, null, flag.name, false, flag.icon));
                     }
                     selectLayout.setItems(flags);
                 } catch (Exception e) {
@@ -594,7 +596,7 @@ public class ReplyLayout
         flag.setText(draft.flag);
         if (!draft.flag.equals("")) {
             flagPicker.setText(draft.flag);
-            pickedFlag = new Flag(draft.flag, draft.flag);
+            pickedFlag = new Flag(draft.flag, draft.flag, null);
         }
         options.setText(draft.options);
         fileName.setText(draft.fileName);
@@ -1166,10 +1168,12 @@ public class ReplyLayout
     public static class Flag {
         public final String name;
         public final String code;
+        public final HttpUrl icon;
 
-        public Flag(String name, String code) {
+        public Flag(String name, String code, HttpUrl icon) {
             this.name = name;
             this.code = code;
+            this.icon = icon;
         }
     }
 }

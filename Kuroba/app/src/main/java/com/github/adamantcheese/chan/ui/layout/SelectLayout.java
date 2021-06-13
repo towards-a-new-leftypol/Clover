@@ -17,6 +17,8 @@
 package com.github.adamantcheese.chan.ui.layout;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
@@ -25,18 +27,26 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.github.adamantcheese.chan.R;
+import com.github.adamantcheese.chan.core.net.NetUtils;
+import com.github.adamantcheese.chan.core.net.NetUtilsClasses;
+import com.github.adamantcheese.chan.utils.BackgroundUtils;
+import com.github.adamantcheese.chan.utils.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+
+import okhttp3.HttpUrl;
 
 import static com.github.adamantcheese.chan.utils.StringUtils.applySearchSpans;
 
@@ -89,6 +99,28 @@ public class SelectLayout<T>
     public void setItems(List<SelectItem<T>> items) {
         this.items.clear();
         this.items.addAll(items);
+
+        for (final SelectItem<T> item : items) {
+            if (item.httpIcon != null) {
+                NetUtils.makeBitmapRequest(item.httpIcon, new NetUtilsClasses.BitmapResult() {
+                    @Override
+                    public void onBitmapFailure(@NonNull HttpUrl source, Exception e) {
+                        Logger.e(this, e.getMessage());
+                    }
+
+                    @Override
+                    public void onBitmapSuccess(@NonNull HttpUrl source, @NonNull Bitmap bitmap) {
+                        item.icon = bitmap;
+                        if (adapter != null) {
+                            int index = adapter.displayList.indexOf(item);
+                            if (index != -1) {
+                                adapter.notifyItemChanged(index);
+                            }
+                        }
+                    }
+                });
+            }
+        }
 
         adapter = new SelectAdapter();
         recyclerView.setAdapter(adapter);
@@ -175,6 +207,13 @@ public class SelectLayout<T>
                 holder.radioGroup.setVisibility(GONE);
             }
 
+            if (item.icon != null) {
+                holder.icon.setVisibility(VISIBLE);
+                holder.icon.setImageBitmap(item.icon);
+            } else {
+                holder.icon.setVisibility(GONE);
+            }
+
             //noinspection StringEquality this is meant to be a reference comparison, not a string comparison
             if (item.searchTerm == item.name) {
                 holder.text.setText(applySearchSpans(item.name, searchQuery));
@@ -242,6 +281,7 @@ public class SelectLayout<T>
         private final RadioGroup radioGroup;
         private final TextView text;
         private final TextView description;
+        private final ImageView icon;
 
         public BoardSelectViewHolder(View itemView) {
             super(itemView);
@@ -250,6 +290,7 @@ public class SelectLayout<T>
             radioGroup = itemView.findViewById(R.id.radiogroup);
             text = itemView.findViewById(R.id.text);
             description = itemView.findViewById(R.id.description);
+            icon = itemView.findViewById(R.id.icon);
 
             checkBox.setOnCheckedChangeListener(this);
             radioButton.setOnCheckedChangeListener(this);
@@ -286,7 +327,7 @@ public class SelectLayout<T>
                         }
                     }
                 }
-                
+
                 updateAllSelected();
             }
         }
@@ -307,15 +348,22 @@ public class SelectLayout<T>
         public final String name;
         public final String description;
         public final String searchTerm;
+        public final HttpUrl httpIcon;
         public boolean checked;
+        public Bitmap icon;
 
         public SelectItem(T item, long id, String name, String description, String searchTerm, boolean checked) {
+            this(item, id, name, description, searchTerm, checked, null);
+        }
+
+        public SelectItem(T item, long id, String name, String description, String searchTerm, boolean checked, HttpUrl httpIcon) {
             this.item = item;
             this.id = id;
             this.name = name;
             this.description = description;
             this.searchTerm = searchTerm;
             this.checked = checked;
+            this.httpIcon = httpIcon;
         }
     }
 }

@@ -15,7 +15,9 @@ import com.github.adamantcheese.chan.utils.CompletableFuture;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Future;
 
 import okhttp3.HttpUrl;
@@ -79,10 +81,13 @@ public class LeftypolActions extends VichanActions {
 
     @Override
     public Future<List<ReplyLayout.Flag>> flags(Board b) {
+        Map<String, String> args = new HashMap<>();
+        args.put("country_code", "chavismo");
+
         return new CompletableFuture<>(Arrays.asList(
-                new ReplyLayout.Flag("Chavismo", "chavismo"),
-                new ReplyLayout.Flag("Gentoo", "gentoo"),
-                new ReplyLayout.Flag("Marx", "marx")
+                new ReplyLayout.Flag("Chavismo", "chavismo", this.site.endpoints().icon("country", args)),
+                new ReplyLayout.Flag("Gentoo", "gentoo", null),
+                new ReplyLayout.Flag("Marx", "marx", null)
         ));
     }
 
