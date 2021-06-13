@@ -26,6 +26,8 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 
 import androidx.recyclerview.widget.RecyclerView;
@@ -47,6 +49,8 @@ public class SelectLayout<T>
     private final List<SelectItem<T>> items = new ArrayList<>();
     private SelectAdapter adapter;
     private boolean allChecked = false;
+    // "Should we select only one item?"
+    private boolean selectSingle = false;
 
     public SelectLayout(Context context) {
         super(context);
@@ -91,6 +95,22 @@ public class SelectLayout<T>
         adapter.load();
 
         updateAllSelected();
+    }
+
+    public void setSelectSingle(boolean selectSingle) {
+        this.selectSingle = selectSingle;
+        this.checkAllButton.setVisibility(selectSingle ? GONE : VISIBLE);
+
+        if (items != null) {
+            for (SelectItem<T> item : items) {
+                item.checked = false;
+            }
+            updateAllSelected();
+        }
+
+        if (adapter != null) {
+            adapter.notifyDataSetChanged();
+        }
     }
 
     public List<SelectItem<T>> getItems() {
@@ -145,6 +165,15 @@ public class SelectLayout<T>
         public void onBindViewHolder(BoardSelectViewHolder holder, int position) {
             SelectItem<T> item = displayList.get(position);
             holder.checkBox.setChecked(item.checked);
+            holder.setRadioCheck(item.checked);
+
+            if (selectSingle) {
+                holder.checkBox.setVisibility(GONE);
+                holder.radioGroup.setVisibility(VISIBLE);
+            } else {
+                holder.checkBox.setVisibility(VISIBLE);
+                holder.radioGroup.setVisibility(GONE);
+            }
 
             //noinspection StringEquality this is meant to be a reference comparison, not a string comparison
             if (item.searchTerm == item.name) {
@@ -209,31 +238,66 @@ public class SelectLayout<T>
             extends RecyclerView.ViewHolder
             implements CompoundButton.OnCheckedChangeListener, OnClickListener {
         private final CheckBox checkBox;
+        private final RadioButton radioButton;
+        private final RadioGroup radioGroup;
         private final TextView text;
         private final TextView description;
 
         public BoardSelectViewHolder(View itemView) {
             super(itemView);
             checkBox = itemView.findViewById(R.id.checkbox);
+            radioButton = itemView.findViewById(R.id.radiobutton);
+            radioGroup = itemView.findViewById(R.id.radiogroup);
             text = itemView.findViewById(R.id.text);
             description = itemView.findViewById(R.id.description);
 
             checkBox.setOnCheckedChangeListener(this);
+            radioButton.setOnCheckedChangeListener(this);
             itemView.setOnClickListener(this);
+        }
+
+        public void setRadioCheck(boolean checked) {
+            if (checked) {
+                radioButton.setChecked(checked);
+            } else {
+                radioGroup.clearCheck();
+            }
         }
 
         @Override
         public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-            if (buttonView == checkBox) {
-                SelectItem<T> board = adapter.displayList.get(getAdapterPosition());
-                board.checked = isChecked;
+            if (buttonView == checkBox || buttonView == radioButton) {
+                SelectItem<T> ourItem = adapter.displayList.get(getAdapterPosition());
+                ourItem.checked = isChecked;
+
+                if (selectSingle && buttonView == radioButton && isChecked) {
+                    // Deselect every other option
+                    int i = 0;
+                    for (SelectItem<T> item : adapter.displayList) {
+                        if (item != ourItem && item.checked) {
+                            item.checked = false;
+                            adapter.notifyItemChanged(i);
+                        }
+                        i++;
+                    }
+                    for (SelectItem<T> item : adapter.sourceList) {
+                        if (item != ourItem) {
+                            item.checked = false;
+                        }
+                    }
+                }
+                
                 updateAllSelected();
             }
         }
 
         @Override
         public void onClick(View v) {
-            checkBox.toggle();
+            if (selectSingle) {
+                radioButton.toggle();
+            } else {
+                setRadioCheck(!checkBox.isChecked());
+            }
         }
     }
 

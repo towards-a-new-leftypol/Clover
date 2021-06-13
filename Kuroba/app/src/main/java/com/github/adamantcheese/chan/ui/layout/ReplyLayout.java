@@ -289,6 +289,7 @@ public class ReplyLayout
         flagPicker.setOnClickListener(v -> {
             final SelectLayout<Flag> selectLayout =
                     (SelectLayout<Flag>) LayoutInflater.from(getContext()).inflate(R.layout.layout_select, null);
+            selectLayout.setSelectSingle(true);
             final AlertDialog.Builder builder = new AlertDialog.Builder(getContext())
                     .setPositiveButton(R.string.flag_selector_select, new DialogInterface.OnClickListener() {
                         @Override
@@ -325,6 +326,7 @@ public class ReplyLayout
             }
 
             pickedFlag = null;
+            flagPicker.setText(R.string.reply_flag);
             flagPickerDialog = builder.show();
         });
 
