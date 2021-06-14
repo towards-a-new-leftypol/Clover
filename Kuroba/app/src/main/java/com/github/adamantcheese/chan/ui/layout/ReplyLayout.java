@@ -303,7 +303,7 @@ public class ReplyLayout
                             for (SelectLayout.SelectItem<Flag> flag : flagSelect.getItems()) {
                                 if (flag.checked) {
                                     pickedFlag = flag.item;
-                                    flagPicker.setText(flag.item.name);
+                                    setFlagPickerText(flag.item.name);
                                     return;
                                 }
                             }
@@ -369,6 +369,14 @@ public class ReplyLayout
         setView(replyInputLayout);
 
         setDividerVisibility(false);
+    }
+
+    private void setFlagPickerText(String text) {
+        if (text.length() > 6) {
+            flagPicker.setText(text.substring(0, 6-3) + "...");
+        } else {
+            flagPicker.setText(text);
+        }
     }
 
     /**
@@ -604,7 +612,7 @@ public class ReplyLayout
         subject.setText(draft.subject);
         flag.setText(draft.flag);
         if (!draft.flag.equals("")) {
-            flagPicker.setText(draft.flag);
+            setFlagPickerText(draft.flag);
             pickedFlag = new Flag(draft.flag, draft.flag, null);
         }
         options.setText(draft.options);
