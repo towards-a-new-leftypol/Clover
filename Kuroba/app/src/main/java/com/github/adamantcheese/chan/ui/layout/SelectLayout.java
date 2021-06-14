@@ -18,6 +18,7 @@ package com.github.adamantcheese.chan.ui.layout;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.AttributeSet;
@@ -105,7 +106,11 @@ public class SelectLayout<T>
                 NetUtils.makeBitmapRequest(item.httpIcon, new NetUtilsClasses.BitmapResult() {
                     @Override
                     public void onBitmapFailure(@NonNull HttpUrl source, Exception e) {
-                        Logger.e(this, e.getMessage());
+                        String error = e.getMessage();
+                        if (error == null || error.equals("")) {
+                            error = "No reported exception";
+                        }
+                        Logger.e(this, error);
                     }
 
                     @Override
@@ -208,8 +213,12 @@ public class SelectLayout<T>
             }
 
             if (item.icon != null) {
+                // Disable antialiasing
+                BitmapDrawable d = new BitmapDrawable(getResources(), item.icon);
+                d.getPaint().setFilterBitmap(false);
+
                 holder.icon.setVisibility(VISIBLE);
-                holder.icon.setImageBitmap(item.icon);
+                holder.icon.setImageDrawable(d);
             } else {
                 holder.icon.setVisibility(GONE);
             }

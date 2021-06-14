@@ -309,7 +309,10 @@ public class ReplyLayout
                             }
                         }
                     })
-                    .setNegativeButton("Cancel", (dialog, which) -> pickedFlag = null)
+                    .setNegativeButton("Cancel", (dialog, which) -> {
+                        pickedFlag = null;
+                        flagPicker.setText(R.string.reply_flag);
+                    })
                     .setView(flagPickerView)
                     .show();
         });
@@ -824,7 +827,7 @@ public class ReplyLayout
                 // Display the select
                 BackgroundUtils.runOnMainThread(() -> {
                     flagPickerView.removeAllViews();
-                    flagPickerView.addView(flagSelect);
+                    flagPickerView.addView(flagSelect, new ViewGroup.LayoutParams(MATCH_PARENT, WRAP_CONTENT));
                 });
             } catch (Exception e) {
                 // TODO: Display this exception

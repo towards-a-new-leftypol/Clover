@@ -1,5 +1,7 @@
 package com.github.adamantcheese.chan.core.site.sites.leftypol;
 
+import com.github.adamantcheese.chan.Chan;
+import com.github.adamantcheese.chan.core.di.NetModule;
 import com.github.adamantcheese.chan.core.model.orm.Board;
 import com.github.adamantcheese.chan.core.model.orm.Loadable;
 import com.github.adamantcheese.chan.core.net.NetUtils;
@@ -11,16 +13,21 @@ import com.github.adamantcheese.chan.core.site.http.HttpCall;
 import com.github.adamantcheese.chan.core.site.http.ReplyResponse;
 import com.github.adamantcheese.chan.ui.layout.ReplyLayout;
 import com.github.adamantcheese.chan.utils.BackgroundUtils;
-import com.github.adamantcheese.chan.utils.CompletableFuture;
+
+import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 
+import okhttp3.Call;
 import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
 import okhttp3.Response;
 
 public class LeftypolActions extends VichanActions {
@@ -81,14 +88,42 @@ public class LeftypolActions extends VichanActions {
 
     @Override
     public Future<List<ReplyLayout.Flag>> flags(Board b) {
-        Map<String, String> args = new HashMap<>();
-        args.put("country_code", "chavismo");
+        FutureTask<List<ReplyLayout.Flag>> futureTask = new FutureTask<>(() -> {
+            // Build a request to "/status.php"
+            OkHttpClient.Builder cb = Chan.instance(NetModule.OkHttpClientWithUtils.class).newBuilder();
+            Request.Builder rb = new Request.Builder().url(this.rootUrl + "status.php");
+            Call call = cb.build().newCall(rb.build());
 
-        return new CompletableFuture<>(Arrays.asList(
-                new ReplyLayout.Flag("Chavismo", "chavismo", this.site.endpoints().icon("country", args)),
-                new ReplyLayout.Flag("Gentoo", "gentoo", null),
-                new ReplyLayout.Flag("Marx", "marx", null)
-        ));
+            // Send the request, check if the captcha is enabled
+            Response r = call.execute();
+            if (r.isSuccessful()) {
+                JSONObject json = new JSONObject(r.body().string());
+                r.body().close();
+                JSONObject flags = json.getJSONObject("flags");
+                ArrayList<ReplyLayout.Flag> result = new ArrayList<>();
+
+                for (Iterator<String> it = flags.keys(); it.hasNext(); ) {
+                    String flagCode = it.next();
+                    String flagName = flags.getString(flagCode);
+
+                    Map<String, String> args = new HashMap<>();
+                    args.put("country_code", flagCode);
+
+                    result.add(new ReplyLayout.Flag(
+                            flagName,
+                            flagCode,
+                            site.endpoints().icon("country", args)
+                    ));
+                }
+
+                return result;
+            } else {
+                r.body().close();
+                throw new Exception(r.message());
+            }
+        });
+        BackgroundUtils.runOnBackgroundThread(() -> futureTask.run());
+        return futureTask;
     }
 
     private void makePostCall(HttpCall call, ReplyResponse replyResponse, PostListener postListener) {
