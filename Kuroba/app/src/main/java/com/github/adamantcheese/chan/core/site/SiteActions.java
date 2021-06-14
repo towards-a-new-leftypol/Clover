@@ -100,7 +100,6 @@ public interface SiteActions {
 
     /**
      * Fetches a list of flags available on a board
-     * @return A Future that is not running. The code calling this function is responsible for starting the future
      */
     Future<List<ReplyLayout.Flag>> flags(Board b);
 }

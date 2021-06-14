@@ -68,7 +68,9 @@ public interface Site {
         IMAGE_FILE_HASH,
 
         /**
-         * This site has a list of flags we can pick from
+         * This site has a list of flags we can pick from.
+         *
+         * @see SiteActions#flags(Board)
          */
         FLAG_LIST,
     }

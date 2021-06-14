@@ -23,7 +23,6 @@ import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.os.Build;
@@ -43,6 +42,7 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.SubMenu;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -79,6 +79,7 @@ import com.github.adamantcheese.chan.ui.helper.RefreshUIMessage;
 import com.github.adamantcheese.chan.ui.view.LoadView;
 import com.github.adamantcheese.chan.ui.view.SelectionListeningEditText;
 import com.github.adamantcheese.chan.utils.AndroidUtils;
+import com.github.adamantcheese.chan.utils.BackgroundUtils;
 import com.github.adamantcheese.chan.utils.BitmapUtils;
 import com.github.adamantcheese.chan.utils.Logger;
 import com.github.adamantcheese.chan.utils.StringUtils;
@@ -93,6 +94,7 @@ import org.greenrobot.eventbus.Subscribe;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import javax.inject.Inject;
@@ -112,7 +114,7 @@ import static com.github.adamantcheese.chan.utils.AndroidUtils.requestViewAndKey
 public class ReplyLayout
         extends LoadView
         implements ReplyPresenter.ReplyPresenterCallback, TextWatcher,
-                   SelectionListeningEditText.SelectionChangedListener, CaptchaHolder.CaptchaValidationListener {
+        SelectionListeningEditText.SelectionChangedListener, CaptchaHolder.CaptchaValidationListener {
 
     ReplyPresenter presenter;
     @Inject
@@ -163,9 +165,9 @@ public class ReplyLayout
     private View botDivider;
 
     // Flag picker fields
-    private AlertDialog flagPickerDialog;
+    private LinearLayout flagPickerView;
+    private SelectLayout<Flag> flagSelect;
     private Flag pickedFlag;
-    Future<List<Flag>> flagList;
 
     // Captcha views:
     private FrameLayout captchaContainer;
@@ -224,6 +226,7 @@ public class ReplyLayout
         subject = replyInputLayout.findViewById(R.id.subject);
         flag = replyInputLayout.findViewById(R.id.flag);
         flagPicker = replyInputLayout.findViewById(R.id.flag_picker);
+        flagPickerView = new LinearLayout(getContext());
         options = replyInputLayout.findViewById(R.id.options);
         fileName = replyInputLayout.findViewById(R.id.file_name);
         filenameNew = replyInputLayout.findViewById(R.id.filename_new);
@@ -289,14 +292,15 @@ public class ReplyLayout
         });
 
         flagPicker.setOnClickListener(v -> {
-            final SelectLayout<Flag> selectLayout =
-                    (SelectLayout<Flag>) LayoutInflater.from(getContext()).inflate(R.layout.layout_select, null);
-            selectLayout.setSelectSingle(true);
-            final AlertDialog.Builder builder = new AlertDialog.Builder(getContext())
-                    .setPositiveButton(R.string.flag_selector_select, new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            for (SelectLayout.SelectItem<Flag> flag : selectLayout.getItems()) {
+            // Detach the flagPickerView from it's parent
+            if (flagPickerView.getParent() != null) {
+                ((ViewGroup) flagPickerView.getParent()).removeView(flagPickerView);
+            }
+
+            new AlertDialog.Builder(getContext())
+                    .setPositiveButton(R.string.flag_selector_select, (dialog, which) -> {
+                        if (flagSelect != null) {
+                            for (SelectLayout.SelectItem<Flag> flag : flagSelect.getItems()) {
                                 if (flag.checked) {
                                     pickedFlag = flag.item;
                                     flagPicker.setText(flag.item.name);
@@ -305,31 +309,9 @@ public class ReplyLayout
                             }
                         }
                     })
-                    .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            pickedFlag = null;
-                        }
-                    });
-
-            if (flagList.isDone()) {
-                try {
-                    List<SelectLayout.SelectItem<Flag>> flags = new ArrayList<>();
-                    for (Flag flag : flagList.get()) {
-                        flags.add(new SelectLayout.SelectItem<>(flag, flag.code.hashCode(), flag.name, null, flag.name, false, flag.icon));
-                    }
-                    selectLayout.setItems(flags);
-                } catch (Exception e) {
-                    Logger.e(this, e.getMessage());
-                }
-                builder.setView(selectLayout);
-            } else {
-                // TODO: Set view as loading
-            }
-
-            pickedFlag = null;
-            flagPicker.setText(R.string.reply_flag);
-            flagPickerDialog = builder.show();
+                    .setNegativeButton("Cancel", (dialog, which) -> pickedFlag = null)
+                    .setView(flagPickerView)
+                    .show();
         });
 
         if (!isInEditMode()) {
@@ -384,6 +366,30 @@ public class ReplyLayout
         setView(replyInputLayout);
 
         setDividerVisibility(false);
+    }
+
+    /**
+     * Builds a dialog to hold the flag picker. Blocks if flagList is not done
+     */
+    private SelectLayout<Flag> buildSelectLayoutFlagsAlert(Future<List<Flag>> flagList) throws ExecutionException, InterruptedException {
+        SelectLayout<Flag> selectLayout = (SelectLayout<Flag>) LayoutInflater.from(getContext()).inflate(R.layout.layout_select, null);
+        selectLayout.setSelectSingle(true);
+
+        List<SelectLayout.SelectItem<Flag>> flags = new ArrayList<>();
+        for (Flag flag : flagList.get()) {
+            flags.add(new SelectLayout.SelectItem<>(
+                    flag,
+                    flag.code.hashCode(),
+                    flag.name,
+                    null,
+                    flag.name,
+                    false,
+                    flag.icon
+            ));
+        }
+        selectLayout.setItems(flags);
+
+        return selectLayout;
     }
 
     public void setCallback(ReplyLayoutCallback callback) {
@@ -800,8 +806,33 @@ public class ReplyLayout
     @Override
     public void openFlagPicker(boolean open, Future<List<Flag>> flagList) {
         flagPicker.setVisibility(open ? VISIBLE : GONE);
-        this.flagList = flagList;
+
+        if (!open) {
+            return;
+        }
+
+        if (!flagList.isDone()) {
+            flagPickerView.removeAllViews();
+            flagPickerView.addView(progressLayout);
+        }
+
+        BackgroundUtils.runOnBackgroundThread(() -> {
+            try {
+                // Block to build the flag select
+                flagSelect = null;
+                flagSelect = buildSelectLayoutFlagsAlert(flagList);
+                // Display the select
+                BackgroundUtils.runOnMainThread(() -> {
+                    flagPickerView.removeAllViews();
+                    flagPickerView.addView(flagSelect);
+                });
+            } catch (Exception e) {
+                // TODO: Display this exception
+                Logger.e(this, e.getMessage());
+            }
+        });
     }
+
     @Override
     public void openCommentQuoteButton(boolean open) {
         commentQuoteButton.setVisibility(open ? View.VISIBLE : View.GONE);
