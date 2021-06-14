@@ -24,6 +24,7 @@ import com.github.adamantcheese.chan.core.site.parser.CommentParser.ResolveLink;
 import com.github.adamantcheese.chan.core.site.parser.CommentParser.ThreadLink;
 import com.github.adamantcheese.chan.core.site.parser.PostParser;
 import com.github.adamantcheese.chan.utils.CompletableFuture;
+import com.github.adamantcheese.chan.ui.layout.ReplyLayout;
 import com.github.adamantcheese.chan.utils.JavaUtils.NoDeleteArrayList;
 
 import java.util.Collections;
@@ -162,6 +163,11 @@ public abstract class ExternalSiteArchive
 
             @Override
             public LoginRequest getLoginDetails() { return new LoginRequest("", ""); }
+
+            @Override
+            public Future<List<ReplyLayout.Flag>> flags(Board b) {
+                return null;
+            }
         };
     }
 

@@ -17,6 +17,9 @@
 package com.github.adamantcheese.chan.ui.layout;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
@@ -25,16 +28,26 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.github.adamantcheese.chan.R;
+import com.github.adamantcheese.chan.core.net.NetUtils;
+import com.github.adamantcheese.chan.core.net.NetUtilsClasses;
+import com.github.adamantcheese.chan.utils.BackgroundUtils;
+import com.github.adamantcheese.chan.utils.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+
+import okhttp3.HttpUrl;
 
 import static com.github.adamantcheese.chan.utils.StringUtils.applySearchSpans;
 
@@ -47,6 +60,8 @@ public class SelectLayout<T>
     private final List<SelectItem<T>> items = new ArrayList<>();
     private SelectAdapter adapter;
     private boolean allChecked = false;
+    // "Should we select only one item?"
+    private boolean selectSingle = false;
 
     public SelectLayout(Context context) {
         super(context);
@@ -86,11 +101,53 @@ public class SelectLayout<T>
         this.items.clear();
         this.items.addAll(items);
 
+        for (final SelectItem<T> item : items) {
+            if (item.httpIcon != null) {
+                NetUtils.makeBitmapRequest(item.httpIcon, new NetUtilsClasses.BitmapResult() {
+                    @Override
+                    public void onBitmapFailure(@NonNull HttpUrl source, Exception e) {
+                        String error = e.getMessage();
+                        if (error == null || error.equals("")) {
+                            error = "No reported exception";
+                        }
+                        Logger.e(this, error);
+                    }
+
+                    @Override
+                    public void onBitmapSuccess(@NonNull HttpUrl source, @NonNull Bitmap bitmap) {
+                        item.icon = bitmap;
+                        if (adapter != null) {
+                            int index = adapter.displayList.indexOf(item);
+                            if (index != -1) {
+                                adapter.notifyItemChanged(index);
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
         adapter = new SelectAdapter();
         recyclerView.setAdapter(adapter);
         adapter.load();
 
         updateAllSelected();
+    }
+
+    public void setSelectSingle(boolean selectSingle) {
+        this.selectSingle = selectSingle;
+        this.checkAllButton.setVisibility(selectSingle ? GONE : VISIBLE);
+
+        if (items != null) {
+            for (SelectItem<T> item : items) {
+                item.checked = false;
+            }
+            updateAllSelected();
+        }
+
+        if (adapter != null) {
+            adapter.notifyDataSetChanged();
+        }
     }
 
     public List<SelectItem<T>> getItems() {
@@ -145,6 +202,26 @@ public class SelectLayout<T>
         public void onBindViewHolder(BoardSelectViewHolder holder, int position) {
             SelectItem<T> item = displayList.get(position);
             holder.checkBox.setChecked(item.checked);
+            holder.setRadioCheck(item.checked);
+
+            if (selectSingle) {
+                holder.checkBox.setVisibility(GONE);
+                holder.radioGroup.setVisibility(VISIBLE);
+            } else {
+                holder.checkBox.setVisibility(VISIBLE);
+                holder.radioGroup.setVisibility(GONE);
+            }
+
+            if (item.icon != null) {
+                // Disable antialiasing
+                BitmapDrawable d = new BitmapDrawable(getResources(), item.icon);
+                d.getPaint().setFilterBitmap(false);
+
+                holder.icon.setVisibility(VISIBLE);
+                holder.icon.setImageDrawable(d);
+            } else {
+                holder.icon.setVisibility(GONE);
+            }
 
             //noinspection StringEquality this is meant to be a reference comparison, not a string comparison
             if (item.searchTerm == item.name) {
@@ -209,31 +286,68 @@ public class SelectLayout<T>
             extends RecyclerView.ViewHolder
             implements CompoundButton.OnCheckedChangeListener, OnClickListener {
         private final CheckBox checkBox;
+        private final RadioButton radioButton;
+        private final RadioGroup radioGroup;
         private final TextView text;
         private final TextView description;
+        private final ImageView icon;
 
         public BoardSelectViewHolder(View itemView) {
             super(itemView);
             checkBox = itemView.findViewById(R.id.checkbox);
+            radioButton = itemView.findViewById(R.id.radiobutton);
+            radioGroup = itemView.findViewById(R.id.radiogroup);
             text = itemView.findViewById(R.id.text);
             description = itemView.findViewById(R.id.description);
+            icon = itemView.findViewById(R.id.icon);
 
             checkBox.setOnCheckedChangeListener(this);
+            radioButton.setOnCheckedChangeListener(this);
             itemView.setOnClickListener(this);
+        }
+
+        public void setRadioCheck(boolean checked) {
+            if (checked) {
+                radioButton.setChecked(checked);
+            } else {
+                radioGroup.clearCheck();
+            }
         }
 
         @Override
         public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-            if (buttonView == checkBox) {
-                SelectItem<T> board = adapter.displayList.get(getAdapterPosition());
-                board.checked = isChecked;
+            if (buttonView == checkBox || buttonView == radioButton) {
+                SelectItem<T> ourItem = adapter.displayList.get(getAdapterPosition());
+                ourItem.checked = isChecked;
+
+                if (selectSingle && buttonView == radioButton && isChecked) {
+                    // Deselect every other option
+                    int i = 0;
+                    for (SelectItem<T> item : adapter.displayList) {
+                        if (item != ourItem && item.checked) {
+                            item.checked = false;
+                            adapter.notifyItemChanged(i);
+                        }
+                        i++;
+                    }
+                    for (SelectItem<T> item : adapter.sourceList) {
+                        if (item != ourItem) {
+                            item.checked = false;
+                        }
+                    }
+                }
+
                 updateAllSelected();
             }
         }
 
         @Override
         public void onClick(View v) {
-            checkBox.toggle();
+            if (selectSingle) {
+                radioButton.toggle();
+            } else {
+                setRadioCheck(!checkBox.isChecked());
+            }
         }
     }
 
@@ -243,15 +357,22 @@ public class SelectLayout<T>
         public final String name;
         public final String description;
         public final String searchTerm;
+        public final HttpUrl httpIcon;
         public boolean checked;
+        public Bitmap icon;
 
         public SelectItem(T item, long id, String name, String description, String searchTerm, boolean checked) {
+            this(item, id, name, description, searchTerm, checked, null);
+        }
+
+        public SelectItem(T item, long id, String name, String description, String searchTerm, boolean checked, HttpUrl httpIcon) {
             this.item = item;
             this.id = id;
             this.name = name;
             this.description = description;
             this.searchTerm = searchTerm;
             this.checked = checked;
+            this.httpIcon = httpIcon;
         }
     }
 }

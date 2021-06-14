@@ -26,6 +26,10 @@ import com.github.adamantcheese.chan.core.site.http.DeleteResponse;
 import com.github.adamantcheese.chan.core.site.http.LoginRequest;
 import com.github.adamantcheese.chan.core.site.http.LoginResponse;
 import com.github.adamantcheese.chan.core.site.http.ReplyResponse;
+import com.github.adamantcheese.chan.ui.layout.ReplyLayout;
+
+import java.util.List;
+import java.util.concurrent.Future;
 
 import java.util.concurrent.Future;
 
@@ -95,4 +99,9 @@ public interface SiteActions {
 
         void onLoginError(Exception e);
     }
+
+    /**
+     * Fetches a list of flags available on a board
+     */
+    Future<List<ReplyLayout.Flag>> flags(Board b);
 }

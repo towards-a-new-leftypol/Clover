@@ -21,6 +21,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Color;
@@ -41,6 +42,7 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.SubMenu;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -77,6 +79,7 @@ import com.github.adamantcheese.chan.ui.helper.RefreshUIMessage;
 import com.github.adamantcheese.chan.ui.view.LoadView;
 import com.github.adamantcheese.chan.ui.view.SelectionListeningEditText;
 import com.github.adamantcheese.chan.utils.AndroidUtils;
+import com.github.adamantcheese.chan.utils.BackgroundUtils;
 import com.github.adamantcheese.chan.utils.BitmapUtils;
 import com.github.adamantcheese.chan.utils.Logger;
 import com.github.adamantcheese.chan.utils.StringUtils;
@@ -89,8 +92,14 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import javax.inject.Inject;
+
+import okhttp3.HttpUrl;
 
 import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
 import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
@@ -105,7 +114,7 @@ import static com.github.adamantcheese.chan.utils.AndroidUtils.requestViewAndKey
 public class ReplyLayout
         extends LoadView
         implements ReplyPresenter.ReplyPresenterCallback, TextWatcher,
-                   SelectionListeningEditText.SelectionChangedListener, CaptchaHolder.CaptchaValidationListener {
+        SelectionListeningEditText.SelectionChangedListener, CaptchaHolder.CaptchaValidationListener {
 
     ReplyPresenter presenter;
     @Inject
@@ -126,6 +135,7 @@ public class ReplyLayout
     private View replyInputLayout;
     private TextView message;
     private EditText name;
+    private Button flagPicker;
     private EditText subject;
     private EditText flag;
     private EditText options;
@@ -153,6 +163,11 @@ public class ReplyLayout
 
     private View topDivider;
     private View botDivider;
+
+    // Flag picker fields
+    private LinearLayout flagPickerView;
+    private SelectLayout<Flag> flagSelect;
+    private Flag pickedFlag;
 
     // Captcha views:
     private FrameLayout captchaContainer;
@@ -210,6 +225,8 @@ public class ReplyLayout
         name = replyInputLayout.findViewById(R.id.name);
         subject = replyInputLayout.findViewById(R.id.subject);
         flag = replyInputLayout.findViewById(R.id.flag);
+        flagPicker = replyInputLayout.findViewById(R.id.flag_picker);
+        flagPickerView = new LinearLayout(getContext());
         options = replyInputLayout.findViewById(R.id.options);
         fileName = replyInputLayout.findViewById(R.id.file_name);
         filenameNew = replyInputLayout.findViewById(R.id.filename_new);
@@ -274,6 +291,32 @@ public class ReplyLayout
             }
         });
 
+        flagPicker.setOnClickListener(v -> {
+            // Detach the flagPickerView from it's parent
+            if (flagPickerView.getParent() != null) {
+                ((ViewGroup) flagPickerView.getParent()).removeView(flagPickerView);
+            }
+
+            new AlertDialog.Builder(getContext())
+                    .setPositiveButton(R.string.flag_selector_select, (dialog, which) -> {
+                        if (flagSelect != null) {
+                            for (SelectLayout.SelectItem<Flag> flag : flagSelect.getItems()) {
+                                if (flag.checked) {
+                                    pickedFlag = flag.item;
+                                    setFlagPickerText(flag.item.name);
+                                    return;
+                                }
+                            }
+                        }
+                    })
+                    .setNegativeButton("Cancel", (dialog, which) -> {
+                        pickedFlag = null;
+                        flagPicker.setText(R.string.reply_flag);
+                    })
+                    .setView(flagPickerView)
+                    .show();
+        });
+
         if (!isInEditMode()) {
             more.setRotation(ChanSettings.moveInputToBottom.get() ? 180f : 0f);
         }
@@ -326,6 +369,38 @@ public class ReplyLayout
         setView(replyInputLayout);
 
         setDividerVisibility(false);
+    }
+
+    private void setFlagPickerText(String text) {
+        if (text.length() > 6) {
+            flagPicker.setText(text.substring(0, 6-3) + "...");
+        } else {
+            flagPicker.setText(text);
+        }
+    }
+
+    /**
+     * Builds a dialog to hold the flag picker. Blocks if flagList is not done
+     */
+    private SelectLayout<Flag> buildSelectLayoutFlagsAlert(Future<List<Flag>> flagList) throws ExecutionException, InterruptedException {
+        SelectLayout<Flag> selectLayout = (SelectLayout<Flag>) LayoutInflater.from(getContext()).inflate(R.layout.layout_select, null);
+        selectLayout.setSelectSingle(true);
+
+        List<SelectLayout.SelectItem<Flag>> flags = new ArrayList<>();
+        for (Flag flag : flagList.get()) {
+            flags.add(new SelectLayout.SelectItem<>(
+                    flag,
+                    flag.code.hashCode(),
+                    flag.name,
+                    null,
+                    flag.name,
+                    false,
+                    flag.icon
+            ));
+        }
+        selectLayout.setItems(flags);
+
+        return selectLayout;
     }
 
     public void setCallback(ReplyLayoutCallback callback) {
@@ -536,6 +611,10 @@ public class ReplyLayout
         name.setText(draft.name);
         subject.setText(draft.subject);
         flag.setText(draft.flag);
+        if (!draft.flag.equals("")) {
+            setFlagPickerText(draft.flag);
+            pickedFlag = new Flag(draft.flag, draft.flag, null);
+        }
         options.setText(draft.options);
         fileName.setText(draft.fileName);
         comment.setText(draft.comment);
@@ -548,7 +627,6 @@ public class ReplyLayout
     public void loadViewsIntoDraft(Reply draft) {
         draft.name = name.getText().toString();
         draft.subject = subject.getText().toString();
-        draft.flag = flag.getText().toString();
         draft.options = options.getText().toString();
         draft.comment = comment.getText().toString();
         draft.fileName = fileName.getText().toString();
@@ -557,6 +635,12 @@ public class ReplyLayout
         if (ChanSettings.enableEmoji.get()) {
             draft.name = StringUtils.parseEmojiToAscii(draft.name);
             draft.comment = StringUtils.parseEmojiToAscii(draft.comment);
+        }
+
+        if (pickedFlag != null) {
+            draft.flag = pickedFlag.code;
+        } else {
+            draft.flag = flag.getText().toString();
         }
     }
 
@@ -728,6 +812,36 @@ public class ReplyLayout
     @Override
     public void openFlag(boolean open) {
         flag.setVisibility(open ? VISIBLE : GONE);
+    }
+
+    @Override
+    public void openFlagPicker(boolean open, Future<List<Flag>> flagList) {
+        flagPicker.setVisibility(open ? VISIBLE : GONE);
+
+        if (!open) {
+            return;
+        }
+
+        if (!flagList.isDone()) {
+            flagPickerView.removeAllViews();
+            flagPickerView.addView(progressLayout);
+        }
+
+        BackgroundUtils.runOnBackgroundThread(() -> {
+            try {
+                // Block to build the flag select
+                flagSelect = null;
+                flagSelect = buildSelectLayoutFlagsAlert(flagList);
+                // Display the select
+                BackgroundUtils.runOnMainThread(() -> {
+                    flagPickerView.removeAllViews();
+                    flagPickerView.addView(flagSelect, new ViewGroup.LayoutParams(MATCH_PARENT, WRAP_CONTENT));
+                });
+            } catch (Exception e) {
+                // TODO: Display this exception
+                Logger.e(this, e.getMessage());
+            }
+        });
     }
 
     @Override
@@ -1091,5 +1205,17 @@ public class ReplyLayout
         void updatePadding();
 
         boolean isViewingCatalog();
+    }
+
+    public static class Flag {
+        public final String name;
+        public final String code;
+        public final HttpUrl icon;
+
+        public Flag(String name, String code, HttpUrl icon) {
+            this.name = name;
+            this.code = code;
+            this.icon = icon;
+        }
     }
 }

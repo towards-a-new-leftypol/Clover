@@ -49,6 +49,7 @@ import com.github.adamantcheese.chan.core.site.http.HttpCall;
 import com.github.adamantcheese.chan.core.site.http.LoginRequest;
 import com.github.adamantcheese.chan.core.site.http.LoginResponse;
 import com.github.adamantcheese.chan.core.site.parser.ChanReader;
+import com.github.adamantcheese.chan.ui.layout.ReplyLayout;
 import com.github.adamantcheese.chan.utils.BackgroundUtils;
 import com.github.adamantcheese.chan.utils.CompletableFuture;
 import com.github.adamantcheese.chan.utils.Logger;
@@ -454,6 +455,11 @@ public class Chan4
         @Override
         public LoginRequest getLoginDetails() {
             return new LoginRequest(passUser.get(), passPass.get());
+        }
+
+        @Override
+        public Future<List<ReplyLayout.Flag>> flags(Board b) {
+            return null;
         }
     };
 
