@@ -614,6 +614,9 @@ public class ReplyLayout
         if (!draft.flag.equals("")) {
             setFlagPickerText(draft.flag);
             pickedFlag = new Flag(draft.flag, draft.flag, null);
+        } else {
+            flagPicker.setText(R.string.reply_flag);
+            pickedFlag = null;
         }
         options.setText(draft.options);
         fileName.setText(draft.fileName);
