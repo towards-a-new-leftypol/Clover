@@ -520,7 +520,7 @@ public class Chan4
 
     @Override
     public boolean siteFeature(SiteFeature siteFeature) {
-        return true; // everything is supported
+        return siteFeature != SiteFeature.FLAG_LIST; // everything but flag listing is supported
     }
 
     @Override
