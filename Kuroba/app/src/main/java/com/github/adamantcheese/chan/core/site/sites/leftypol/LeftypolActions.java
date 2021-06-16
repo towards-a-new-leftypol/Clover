@@ -60,6 +60,16 @@ public class LeftypolActions extends VichanActions {
     }
 
     @Override
+    public void handlePost(ReplyResponse replyResponse, Response response, String result) {
+        super.handlePost(replyResponse, response, result);
+
+        // On a success server response, mark the post as posted
+        if (response.isSuccessful()) {
+            replyResponse.posted = true;
+        }
+    }
+
+    @Override
     public boolean postRequiresAuthentication() {
         return true;
     }
