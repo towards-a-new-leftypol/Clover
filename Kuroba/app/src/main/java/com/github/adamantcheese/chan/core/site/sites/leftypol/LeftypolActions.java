@@ -2,13 +2,17 @@ package com.github.adamantcheese.chan.core.site.sites.leftypol;
 
 import com.github.adamantcheese.chan.core.model.orm.Loadable;
 import com.github.adamantcheese.chan.core.net.NetUtils;
+import com.github.adamantcheese.chan.core.net.NetUtilsClasses;
 import com.github.adamantcheese.chan.core.site.SiteAuthentication;
+import com.github.adamantcheese.chan.core.site.common.CommonDataStructs;
 import com.github.adamantcheese.chan.core.site.common.CommonSite;
 import com.github.adamantcheese.chan.core.site.common.MultipartHttpCall;
 import com.github.adamantcheese.chan.core.site.common.vichan.VichanActions;
 import com.github.adamantcheese.chan.core.site.http.HttpCall;
 import com.github.adamantcheese.chan.core.site.http.ReplyResponse;
+import com.github.adamantcheese.chan.core.site.sites.chan4.Chan4;
 import com.github.adamantcheese.chan.utils.BackgroundUtils;
+import com.github.adamantcheese.chan.utils.Logger;
 
 import okhttp3.HttpUrl;
 import okhttp3.Response;
@@ -20,6 +24,22 @@ public class LeftypolActions extends VichanActions {
         super(commonSite);
 
         this.rootUrl = HttpUrl.parse(rootUrl);
+    }
+
+    @Override
+    public void boards(BoardsListener listener) {
+        NetUtils.makeJsonRequest(this.site.endpoints().boards(), new NetUtilsClasses.ResponseResult<CommonDataStructs.Boards>() {
+            @Override
+            public void onFailure(Exception e) {
+                Logger.e(this, "Failed to get boards from server", e);
+                listener.onBoardsReceived(new CommonDataStructs.Boards());
+            }
+
+            @Override
+            public void onSuccess(CommonDataStructs.Boards result) {
+                listener.onBoardsReceived(result);
+            }
+        }, new LeftypolBoardsRequest(this.site));
     }
 
     @Override
@@ -60,18 +80,8 @@ public class LeftypolActions extends VichanActions {
     }
 
     @Override
-    public void handlePost(ReplyResponse replyResponse, Response response, String result) {
-        super.handlePost(replyResponse, response, result);
-
-        // On a success server response, mark the post as posted
-        if (response.isSuccessful()) {
-            replyResponse.posted = true;
-        }
-    }
-
-    @Override
     public boolean postRequiresAuthentication() {
-        return true;
+        return false;
     }
 
     @Override
