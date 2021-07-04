@@ -119,21 +119,7 @@ public class Leftypol extends CommonSite {
     @Override
     public void setup() {
 
-        setBoards(
-                Board.fromSiteNameCode(this, "Leftist Politically Incorrect", "leftypol"),
-                Board.fromSiteNameCode(this, "Overboard", "overboard"),
-                Board.fromSiteNameCode(this, "Random", "b"),
-                Board.fromSiteNameCode(this, "Hobby", "hobby"),
-                Board.fromSiteNameCode(this, "Technology", "tech"),
-                Board.fromSiteNameCode(this, "Education", "edu"),
-                Board.fromSiteNameCode(this, "Games", "games"),
-                Board.fromSiteNameCode(this, "Anime", "anime"),
-                Board.fromSiteNameCode(this, "Music", "music"),
-                Board.fromSiteNameCode(this, "meta", "meta"),
-                Board.fromSiteNameCode(this, "dead", "dead"),
-                Board.fromSiteNameCode(this, "gulag", "gulag")
-        );
-
+        setBoardsType(BoardsType.DYNAMIC);
         setResolvable(URL_HANDLER);
 
         setConfig(new CommonConfig() {

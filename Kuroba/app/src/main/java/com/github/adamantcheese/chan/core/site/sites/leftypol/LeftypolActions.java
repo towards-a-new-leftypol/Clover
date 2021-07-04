@@ -5,7 +5,9 @@ import com.github.adamantcheese.chan.core.di.NetModule;
 import com.github.adamantcheese.chan.core.model.orm.Board;
 import com.github.adamantcheese.chan.core.model.orm.Loadable;
 import com.github.adamantcheese.chan.core.net.NetUtils;
+import com.github.adamantcheese.chan.core.net.NetUtilsClasses;
 import com.github.adamantcheese.chan.core.site.SiteAuthentication;
+import com.github.adamantcheese.chan.core.site.common.CommonDataStructs;
 import com.github.adamantcheese.chan.core.site.common.CommonSite;
 import com.github.adamantcheese.chan.core.site.common.MultipartHttpCall;
 import com.github.adamantcheese.chan.core.site.common.vichan.VichanActions;
@@ -41,11 +43,27 @@ public class LeftypolActions extends VichanActions {
     }
 
     @Override
+    public void boards(BoardsListener listener) {
+        NetUtils.makeJsonRequest(this.site.endpoints().boards(), new NetUtilsClasses.ResponseResult<CommonDataStructs.Boards>() {
+            @Override
+            public void onFailure(Exception e) {
+                Logger.e(this, "Failed to get boards from server", e);
+                listener.onBoardsReceived(new CommonDataStructs.Boards());
+            }
+
+            @Override
+            public void onSuccess(CommonDataStructs.Boards result) {
+                listener.onBoardsReceived(result);
+            }
+        }, new LeftypolBoardsRequest(this.site));
+    }
+
+    @Override
     public void setupPost(Loadable loadable, MultipartHttpCall call) {
         super.setupPost(loadable, call);
 
         call.parameter("user_flag", loadable.draft.flag);
-        if (loadable.draft.captchaResponse != "" && loadable.draft.captchaResponse != null) {
+        if (loadable.draft.captchaResponse != null && !loadable.draft.captchaResponse.equals("")) {
             call.parameter("captcha", loadable.draft.captchaResponse);
         }
     }

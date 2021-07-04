@@ -64,6 +64,15 @@ public class NetUtils {
             HttpCallback<? extends HttpCall> callback,
             @Nullable ProgressRequestBody.ProgressRequestListener progressListener
     ) {
+        makeHttpCall(httpCall, callback, progressListener, 0);
+    }
+
+    public static void makeHttpCall(
+            HttpCall httpCall,
+            HttpCallback<? extends HttpCall> callback,
+            @Nullable ProgressRequestBody.ProgressRequestListener progressListener,
+            int timeoutMs
+    ) {
         httpCall.setCallback(callback);
 
         Request.Builder requestBuilder = new Request.Builder();
@@ -77,7 +86,10 @@ public class NetUtils {
             }
         }
 
-        instance(OkHttpClientWithUtils.class).getProxiedClient().newCall(requestBuilder.build()).enqueue(httpCall);
+        OkHttpClient.Builder client = instance(OkHttpClientWithUtils.class).getProxiedClient().newBuilder();
+        client.callTimeout(timeoutMs, TimeUnit.MILLISECONDS);
+
+        client.build().newCall(requestBuilder.build()).enqueue(httpCall);
     }
 
     public static Call makeBitmapRequest(
