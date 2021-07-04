@@ -23,22 +23,7 @@ public class LeftypolEndpoints extends VichanEndpoints {
 
     @Override
     public HttpUrl thumbnailUrl(Post.Builder post, boolean spoiler, Map<String, String> arg) {
-        String thumb = arg.get("thumb_path");
-
-        if (spoiler) {
-            if (post.board.customSpoilers > 0) {
-                return root.builder()
-                    .s("static")
-                    .s("spoiler_alunya.png")
-                    .url();
-            }
-            return root.builder()
-                    .s("static")
-                    .s("spoiler.png")
-                    .url();
-        }
-
-        return root.builder().s(thumb).url();
+        return root.builder().s(arg.get("thumb_path")).url();
     }
 
     @Override
