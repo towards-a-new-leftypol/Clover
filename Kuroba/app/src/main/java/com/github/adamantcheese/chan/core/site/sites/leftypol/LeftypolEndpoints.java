@@ -17,54 +17,28 @@ public class LeftypolEndpoints extends VichanEndpoints {
     }
 
     @Override
+    public HttpUrl imageUrl(Post.Builder post, Map<String, String> arg) {
+        return root.builder().s(arg.get("file_path")).url();
+    }
+
+    @Override
     public HttpUrl thumbnailUrl(Post.Builder post, boolean spoiler, Map<String, String> arg) {
-        String ext = arg.get("ext");
-        String tim = arg.get("tim");
+        String thumb = arg.get("thumb_path");
 
         if (spoiler) {
+            if (post.board.customSpoilers > 0) {
+                return root.builder()
+                    .s("static")
+                    .s("spoiler_alunya.png")
+                    .url();
+            }
             return root.builder()
                     .s("static")
                     .s("spoiler.png")
                     .url();
         }
 
-        if (ext.equals("zip")) {
-            return root.builder()
-                    .s("static")
-                    .s("zip.png")
-                    .url();
-        }
-
-        String[] videoExts = new String[]{"mp4", "webm"};
-        String[] noThumbExts = new String[]{"epub", "txt", "mp3"};
-
-        String finalExt = ".png";
-
-        if (contains(videoExts, ext)) {
-            finalExt = ".jpg";
-        } else if (contains(noThumbExts, ext)) {
-            // Default book icon is a static file
-            return root.builder()
-                    .s("static")
-                    .s("file.png")
-                    .url();
-        }
-
-        return root.builder()
-                .s(post.board.code)
-                .s("thumb")
-                .s(tim + finalExt)
-                .url();
-    }
-
-    private boolean contains(String[] haystack, String needle) {
-        for (int i = 0; i < haystack.length; i++) {
-            if (haystack[i].equals(needle)) {
-                return true;
-            }
-        }
-
-        return false;
+        return root.builder().s(thumb).url();
     }
 
     @Override
@@ -75,5 +49,10 @@ public class LeftypolEndpoints extends VichanEndpoints {
                 .addQueryParameter("post", "delete_" + post.no)
                 .addQueryParameter("board", post.boardCode)
                 .build();
+    }
+
+    @Override
+    public HttpUrl boards() {
+        return root.builder().s("status.php").url();
     }
 }

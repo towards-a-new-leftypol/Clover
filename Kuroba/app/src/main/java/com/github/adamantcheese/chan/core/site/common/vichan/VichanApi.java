@@ -289,7 +289,7 @@ public class VichanApi
         return new Pair<>(builder.no, builder.lastModified); // this return is only used for pages!
     }
 
-    protected PostImage readPostImage(JsonReader reader, Post.Builder builder, SiteEndpoints endpoints)
+    private PostImage readPostImage(JsonReader reader, Post.Builder builder, SiteEndpoints endpoints)
             throws IOException {
         try {
             reader.beginObject();

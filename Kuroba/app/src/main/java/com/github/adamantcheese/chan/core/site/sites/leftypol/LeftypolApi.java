@@ -17,6 +17,7 @@ import com.github.adamantcheese.chan.utils.Logger;
 
 import org.jsoup.parser.Parser;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -46,16 +47,6 @@ public class LeftypolApi extends VichanApi {
         String comment = null;
         String banMessage = null;
         String warningMessage = null;
-
-        // File
-        String fileId = null;
-        String fileExt = null;
-        int fileWidth = 0;
-        int fileHeight = 0;
-        long fileSize = 0;
-        boolean fileSpoiler = false;
-        String fileName = null;
-        String fileHash = null;
 
         List<PostImage> files = new ArrayList<>();
 
@@ -102,26 +93,8 @@ public class LeftypolApi extends VichanApi {
                 case "ban_msg":
                     banMessage = reader.nextString();
                     break;
-                case "tim":
-                    fileId = reader.nextString();
-                    break;
                 case "time":
                     builder.setUnixTimestampSeconds(reader.nextLong());
-                    break;
-                case "ext":
-                    fileExt = reader.nextString().replace(".", "");
-                    break;
-                case "w":
-                    fileWidth = reader.nextInt();
-                    break;
-                case "h":
-                    fileHeight = reader.nextInt();
-                    break;
-                case "fsize":
-                    fileSize = reader.nextLong();
-                    break;
-                case "filename":
-                    fileName = reader.nextString();
                     break;
                 case "trip":
                     builder.tripcode(reader.nextString());
@@ -134,9 +107,6 @@ public class LeftypolApi extends VichanApi {
                     break;
                 case "country_name":
                     countryName = reader.nextString();
-                    break;
-                case "spoiler":
-                    fileSpoiler = reader.nextInt() == 1;
                     break;
                 case "resto":
                     int opId = reader.nextInt();
@@ -170,7 +140,7 @@ public class LeftypolApi extends VichanApi {
                 case "capcode":
                     builder.moderatorCapcode(reader.nextString());
                     break;
-                case "extra_files":
+                case "files":
                     reader.beginArray();
 
                     while (reader.hasNext()) {
@@ -181,9 +151,6 @@ public class LeftypolApi extends VichanApi {
                     }
 
                     reader.endArray();
-                    break;
-                case "md5":
-                    fileHash = reader.nextString();
                     break;
                 default:
                     reader.skipValue();
@@ -218,25 +185,6 @@ public class LeftypolApi extends VichanApi {
         }
         builder.comment(comment);
 
-        // The file from between the other values.
-        if (fileId != null && fileName != null && fileExt != null) {
-            Map<String, String> args = makeArgument("tim", fileId, "ext", fileExt);
-            PostImage image = new PostImage.Builder().serverFilename(fileId)
-                    .thumbnailUrl(endpoints.thumbnailUrl(builder, false, args))
-                    .spoilerThumbnailUrl(endpoints.thumbnailUrl(builder, true, args))
-                    .imageUrl(endpoints.imageUrl(builder, args))
-                    .filename(Parser.unescapeEntities(fileName, false))
-                    .extension(fileExt)
-                    .imageWidth(fileWidth)
-                    .imageHeight(fileHeight)
-                    .spoiler(fileSpoiler)
-                    .size(fileSize)
-                    .fileHash(fileHash, true)
-                    .build();
-            // Insert it at the beginning.
-            files.add(0, image);
-        }
-
         builder.images(files);
 
         if (builder.op) {
@@ -263,5 +211,87 @@ public class LeftypolApi extends VichanApi {
 
         queue.addForParse(builder);
         return new Pair<>(builder.no, builder.lastModified); // this return is only used for pages!
+    }
+
+    private PostImage readPostImage(JsonReader reader, Post.Builder builder, SiteEndpoints endpoints)
+            throws IOException {
+        reader.beginObject();
+
+        String fileId = null;
+        long fileSize = 0;
+
+        String fileExt = null;
+        int fileWidth = 0;
+        int fileHeight = 0;
+        boolean fileSpoiler = false;
+        String fileName = null;
+        String fileHash = null;
+        String fileMime = "";
+
+        String filePath = "";
+        String thumbPath = "";
+
+        while (reader.hasNext()) {
+            switch (reader.nextName()) {
+                case "id":
+                    fileId = reader.nextString();
+                    break;
+                case "fsize":
+                    fileSize = reader.nextLong();
+                    break;
+                case "w":
+                    fileWidth = reader.nextInt();
+                    break;
+                case "h":
+                    fileHeight = reader.nextInt();
+                    break;
+                case "spoiler":
+                    fileSpoiler = reader.nextBoolean();
+                    break;
+                case "ext":
+                    fileExt = reader.nextString();
+                    break;
+                case "filename":
+                    fileName = reader.nextString();
+                    break;
+                case "md5":
+                    fileHash = reader.nextString();
+                    break;
+                case "mime":
+                    fileMime = reader.nextString();
+                    break;
+                case "file_path":
+                    filePath = reader.nextString();
+                    break;
+                case "thumb_path":
+                    thumbPath = reader.nextString();
+                    break;
+                default:
+                    reader.skipValue();
+                    break;
+            }
+        }
+
+        reader.endObject();
+
+        if (fileId != null && fileName != null && fileExt != null) {
+            Map<String, String> args = makeArgument(
+                    "file_path", filePath,
+                    "thumb_path", thumbPath
+            );
+            return new PostImage.Builder().serverFilename(fileId)
+                    .thumbnailUrl(endpoints.thumbnailUrl(builder, false, args))
+                    .spoilerThumbnailUrl(endpoints.thumbnailUrl(builder, true, args))
+                    .imageUrl(endpoints.imageUrl(builder, args))
+                    .filename(Parser.unescapeEntities(fileName, false))
+                    .extension(fileExt)
+                    .imageWidth(fileWidth)
+                    .imageHeight(fileHeight)
+                    .spoiler(fileSpoiler)
+                    .size(fileSize)
+                    .fileHash(fileHash, true)
+                    .build();
+        }
+        return null;
     }
 }
